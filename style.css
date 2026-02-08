@@ -44,7 +44,7 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: white;
+  background: rgb(255, 255, 255);
   padding: 12px 20px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   z-index: 1000;
@@ -424,14 +424,20 @@ input[readonly], input[readonly]:focus {
 /* Header (fixed) styles */
 .header {
   position: fixed;
-  inset: 0 0 auto 0;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bg);
-  padding: 12px 18px;
-  box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+  background: #ffffff;          /* blanc pur et opaque */
+  /* ou si tu préfères utiliser la variable : */
+  /* background: var(--bg); */
+  /* background-color: white !important; */   /* ← solution ultra-forcée si besoin */
+  padding: 12px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);  /* ombre un peu plus prononcée pour bien détacher */
   z-index: 1200;
+  backdrop-filter: none;        /* ← empêche tout flou ou filtre qui pourrait donner un effet transparent */
 }
 
 .header h1 { margin: 0; font-size: 18px; color: var(--text); }

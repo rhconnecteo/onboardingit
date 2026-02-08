@@ -140,7 +140,11 @@ async function loadUsers() {
 // ===============================
 window.loadUser = function () {
   const i = el.matricule.value;
-  if (i === "") return;
+  if (i === "") {
+    el.msg.textContent = "";
+    el.msg.style.color = "";
+    return;
+  }
 
   currentUser = users[i];
 
@@ -149,10 +153,8 @@ window.loadUser = function () {
     return;
   }
 
-  // sécuriser outils si absent
   if (!currentUser.outils) currentUser.outils = [];
 
-  // ajouter listener sur dateFin pour synchroniser le modèle
   el.dateFin.removeEventListener('change', handleDateFinChange);
   el.dateFin.addEventListener('change', handleDateFinChange);
 
@@ -168,11 +170,14 @@ window.loadUser = function () {
 
   renderOutils();
   updateEtat();
+
+  el.msg.textContent = "";
+  el.msg.style.color = "";
 };
 
 
 // ===============================
-// RENDER OUTILS DYNAMIQUES
+// RENDER OUTILS DYNAMIQUES (sans Rejeté)
 // ===============================
 function renderOutils() {
   if (!currentUser) return;
@@ -186,10 +191,8 @@ function renderOutils() {
     const card = document.createElement("div");
     card.className = "outil-card";
 
-    // Status badge color
     let badgeClass = "en-cours";
     if (o.statut === "Terminé") badgeClass = "termine";
-    else if (o.statut === "Rejeté") badgeClass = "rejete";
 
     card.innerHTML = `
       <span class="outil-status-badge ${badgeClass}">${o.statut || "En cours"}</span>
@@ -201,10 +204,9 @@ function renderOutils() {
 
       <div class="outil-box">
         <label>✓ Statut</label>
-        <select class="outil-statut" data-index="${idx}" ${(!o.outil || (String(o.outil).trim() === "") || o.statut === "Terminé" || o.statut === "Rejeté") ? "disabled" : ""}>
+        <select class="outil-statut" data-index="${idx}" ${(!o.outil || String(o.outil).trim() === "" || o.statut === "Terminé") ? "disabled" : ""}>
           <option value="En cours" ${(o.statut || "En cours") === "En cours" ? "selected" : ""}>En cours</option>
           <option value="Terminé" ${o.statut === "Terminé" ? "selected" : ""}>Terminé</option>
-          <option value="Rejeté" ${o.statut === "Rejeté" ? "selected" : ""}>Rejeté</option>
         </select>
       </div>
 
@@ -223,29 +225,24 @@ function renderOutils() {
 
   el.outils.appendChild(container);
 
-  // ensure selects are disabled when the outil name is empty (defensive)
+  // Synchronisation défensive
   const nomsAfter = container.querySelectorAll('.outil-nom');
   nomsAfter.forEach(inp => {
     const idx = parseInt(inp.dataset.index);
     const val = (inp.value || '').trim();
     const sel = container.querySelector(`.outil-statut[data-index="${idx}"]`);
     
-    // vérifier si l'outil est terminé/rejeté ou si le nom est vide
-    const isTermineOrRejet = currentUser && currentUser.outils && currentUser.outils[idx] && 
-                              (currentUser.outils[idx].statut === 'Terminé' || currentUser.outils[idx].statut === 'Rejeté');
-    
     if (sel) {
-      sel.disabled = (val === '' || isTermineOrRejet);
+      sel.disabled = (val === '' || currentUser?.outils?.[idx]?.statut === 'Terminé');
       if (val === '') {
         sel.value = 'En cours';
-        // ensure model matches
-        if (currentUser && currentUser.outils && currentUser.outils[idx]) currentUser.outils[idx].statut = 'En cours';
+        if (currentUser?.outils?.[idx]) currentUser.outils[idx].statut = 'En cours';
       }
     }
-    // also ensure delete button disabled state matches statut
+
     const delBtn = container.querySelector(`.outil-delete-btn[data-index="${idx}"]`);
     if (delBtn) {
-      delBtn.disabled = (currentUser && currentUser.outils && currentUser.outils[idx] && currentUser.outils[idx].statut !== 'En cours');
+      delBtn.disabled = (currentUser?.outils?.[idx]?.statut !== 'En cours');
     }
   });
 
@@ -283,7 +280,7 @@ window.deleteOutil = function (idx) {
   if (!outil) return;
 
   if (outil.statut !== "En cours") {
-    alert("Impossible de supprimer un outil terminé ou rejeté");
+    alert("Impossible de supprimer un outil terminé");
     return;
   }
 
@@ -299,16 +296,14 @@ window.deleteOutil = function (idx) {
 function setupOutilsEvents() {
   const noms = document.querySelectorAll(".outil-nom");
   const selects = document.querySelectorAll(".outil-statut");
-  const dates = document.querySelectorAll(".outil-date");
+  // const dates = document.querySelectorAll(".outil-date");  ← readonly
 
-  // nom outil
   noms.forEach(inp => {
     inp.addEventListener("input", (e) => {
       const idx = parseInt(e.target.dataset.index);
       const val = e.target.value || "";
       currentUser.outils[idx].outil = val;
 
-      // activer/désactiver le select statut selon si le nom est vide
       const sel = document.querySelector(`.outil-statut[data-index="${idx}"]`);
       if (sel) {
         if (val.trim() === "") {
@@ -316,29 +311,25 @@ function setupOutilsEvents() {
           sel.disabled = true;
           currentUser.outils[idx].statut = "En cours";
         } else {
-          sel.disabled = false;
+          sel.disabled = currentUser.outils[idx].statut === "Terminé";
         }
       }
     });
   });
 
-  // statut
   selects.forEach(sel => {
     sel.addEventListener("change", (e) => {
       const idx = parseInt(e.target.dataset.index);
       currentUser.outils[idx].statut = e.target.value;
 
-      // si terminé ou rejeté => auto date aujourd'hui si vide
-      if ((e.target.value === "Terminé" || e.target.value === "Rejeté") && !currentUser.outils[idx].date) {
+      if (e.target.value === "Terminé" && !currentUser.outils[idx].date) {
         currentUser.outils[idx].date = todayFR();
       }
 
       updateEtat();
-      renderOutils();
+      renderOutils();   // refresh badges + disabled states
     });
   });
-
-  // dates sont maintenant readonly, pas d'event listeners nécessaires
 }
 
 
@@ -366,19 +357,19 @@ function updateEtat() {
 
   const outils = currentUser.outils || [];
 
-  // vérifier si tous les outils ont le statut "Terminé" ET au moins un outil existe
   const allTermine = outils.length > 0 && outils.every(o => o.statut === "Terminé");
 
   if (allTermine) {
     currentUser.etat = "Terminé";
 
-    // prendre la dernière date remplie parmi les outils
-    const dates = outils.filter(o => o.date && o.date !== "").map(o => o.date);
+    const dates = outils
+      .filter(o => o.date && o.date !== "")
+      .map(o => o.date);
+
     if (dates.length > 0) {
-      // prendre la date la plus récente
+      // dernière date (la plus récente si on suppose ordre chronologique)
       currentUser.dateFin = dates[dates.length - 1];
     } else {
-      // si pas de date, remplir avec aujourd'hui
       currentUser.dateFin = todayFR();
     }
   } else {
@@ -399,7 +390,7 @@ function updateEtat() {
 
 
 // ===============================
-// SAVE USER (FIX CORS: USE GET)
+// SAVE USER
 // ===============================
 window.save = async function () {
   if (!currentUser) {
@@ -408,7 +399,6 @@ window.save = async function () {
     return;
   }
 
-  // récupérer outils depuis inputs
   const noms = document.querySelectorAll(".outil-nom");
   const statuts = document.querySelectorAll(".outil-statut");
 
@@ -422,13 +412,9 @@ window.save = async function () {
     currentUser.outils[idx].statut = sel.value;
   });
 
-  // les dates sont déjà dans le modèle (currentUser.outils[idx].date)
-  // pas besoin de les récupérer des inputs readonly
-
   updateEtat();
 
   try {
-    // IMPORTANT: GET pour éviter CORS
     const url = `${API_URL}?action=saveUser&data=${encodeURIComponent(JSON.stringify(currentUser))}`;
 
     const res = await fetch(url);
@@ -516,11 +502,9 @@ function renderDashboard(data) {
 
   data.forEach(row => {
     const suiviClass =
-      row.statutSuivi === "Respecté"
-        ? "status-success"
-        : row.statutSuivi === "Non respecté"
-        ? "status-danger"
-        : "status-info";
+      row.statutSuivi === "Respecté"   ? "status-success" :
+      row.statutSuivi === "Non respecté" ? "status-danger" :
+      "status-info";
 
     tbody.innerHTML += `
       <tr>
@@ -562,8 +546,8 @@ function updateCharts() {
     return;
   }
 
-  const enCours = dashboardData.filter(u => u.statutSuivi === "En cours").length;
-  const respecte = dashboardData.filter(u => u.statutSuivi === "Respecté").length;
+  const enCours    = dashboardData.filter(u => u.statutSuivi === "En cours").length;
+  const respecte   = dashboardData.filter(u => u.statutSuivi === "Respecté").length;
   const nonRespecte = dashboardData.filter(u => u.statutSuivi === "Non respecté").length;
 
   const etatTermine = dashboardData.filter(u => u.etat === "Terminé").length;
@@ -591,10 +575,7 @@ function updateCharts() {
         responsive: true,
         maintainAspectRatio: true,
         plugins: {
-          legend: {
-            position: "bottom",
-            labels: { padding: 12, font: { size: 12 }, usePointStyle: true }
-          }
+          legend: { position: "bottom", labels: { padding: 12, font: { size: 12 }, usePointStyle: true } }
         }
       }
     });
@@ -624,10 +605,7 @@ function updateCharts() {
         responsive: true,
         maintainAspectRatio: true,
         plugins: {
-          legend: {
-            position: "bottom",
-            labels: { padding: 12, font: { size: 12 }, usePointStyle: true }
-          }
+          legend: { position: "bottom", labels: { padding: 12, font: { size: 12 }, usePointStyle: true } }
         }
       }
     });
@@ -641,15 +619,15 @@ function updateCharts() {
 // FILTER TABLE
 // ===============================
 function setupTableFilters() {
-  const searchBox = document.getElementById("searchBox");
-  const etatFilter = document.getElementById("etatFilter");
+  const searchBox  = document.getElementById("searchBox");
+  const etatFilter  = document.getElementById("etatFilter");
   const suiviFilter = document.getElementById("suiviFilter");
 
   if (!searchBox || !etatFilter || !suiviFilter) return;
 
   const filterTable = () => {
     const searchTerm = searchBox.value.toLowerCase();
-    const etatValue = etatFilter.value;
+    const etatValue  = etatFilter.value;
     const suiviValue = suiviFilter.value;
 
     const tbody = document.querySelector("#dashboardTable tbody");
@@ -659,28 +637,28 @@ function setupTableFilters() {
 
     rows.forEach(row => {
       const matricule = row.cells[0]?.textContent.toLowerCase() || "";
-      const statut = row.cells[1]?.textContent.toLowerCase() || "";
-      const nom = row.cells[2]?.textContent.toLowerCase() || "";
-      const login = row.cells[6]?.textContent.toLowerCase() || "";
+      const statut    = row.cells[1]?.textContent.toLowerCase() || "";
+      const nom       = row.cells[2]?.textContent.toLowerCase() || "";
+      const login     = row.cells[6]?.textContent.toLowerCase() || "";
 
-      const etat = row.cells[9]?.textContent || "";
+      const etat  = row.cells[9]?.textContent || "";
       const suivi = row.cells[11]?.textContent || "";
 
       const matchSearch =
         matricule.includes(searchTerm) ||
-        statut.includes(searchTerm) ||
-        nom.includes(searchTerm) ||
+        statut.includes(searchTerm)    ||
+        nom.includes(searchTerm)       ||
         login.includes(searchTerm);
 
-      const matchEtat = !etatValue || etat === etatValue;
+      const matchEtat  = !etatValue || etat === etatValue;
       const matchSuivi = !suiviValue || suivi.includes(suiviValue);
 
       row.style.display = matchSearch && matchEtat && matchSuivi ? "" : "none";
     });
   };
 
-  searchBox.oninput = filterTable;
-  etatFilter.onchange = filterTable;
+  searchBox.oninput   = filterTable;
+  etatFilter.onchange  = filterTable;
   suiviFilter.onchange = filterTable;
 }
 
@@ -700,9 +678,7 @@ function showApiError(message) {
   const node = el.msg || document.getElementById("msg");
 
   if (node) {
-    node.textContent =
-      message +
-      " — Vérifiez le déploiement Web App et les permissions (Anyone, even anonymous).";
+    node.textContent = message + " — Vérifiez le déploiement Web App et les permissions (Anyone, even anonymous).";
     node.style.color = "red";
   } else {
     alert(message);
