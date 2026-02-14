@@ -1,7 +1,7 @@
 // ===============================
 // CONFIG API
 // ===============================
-const API_URL = "https://script.google.com/macros/s/AKfycbxIyh0zk6PS9lOXwt3bHKYQyrnSRe7hx9tM5nFA5oV7kZ89g8_ENnRNiBaz1TOtjnxepQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxP10YcjzjKowXrtNT0yBG1UTSjrQ2jt7IfMtw1WvapgpBNRtaf3o2EhgeA3urmLTvzcA/exec";
 
 
 // ===============================
@@ -31,6 +31,7 @@ let currentUser = null;
 let dashboardData = [];
 let chartSuivi = null;
 let chartEtat = null;
+let detailsCache = {}; // Cache pour stocker les données de détails
 
 
 // ===============================
@@ -137,6 +138,78 @@ async function loadUsers() {
 
 // ===============================
 // LOAD USER IN FORM
+// ===============================
+// EDIT USER FROM DASHBOARD
+// ===============================
+function editUser(matricule) {
+  // Find user in the users array
+  for (let key in users) {
+    if (users[key].matricule === matricule) {
+      el.matricule.value = key;
+      loadUser();
+      showForm();
+      return;
+    }
+  }
+}
+
+
+// ===============================
+// SHOW DETAILS MODAL (OUTILS)
+// ===============================
+function showDetails(detailId) {
+  const modal = document.getElementById("detailsModal");
+  const tbody = document.getElementById("detailsTableBody");
+  
+  if (!modal || !tbody) return;
+  
+  // Récupérer les données du cache
+  const details = detailsCache[detailId];
+  if (!details) {
+    console.error("Détails non trouvés:", detailId);
+    return;
+  }
+  
+  // Remplir le header
+  document.getElementById("detailsModalMatricule").textContent = details.matricule;
+  document.getElementById("detailsModalNom").textContent = details.nom;
+  
+  // Remplir les infos générales
+  document.getElementById("detailsDateCreation").textContent = details.dateCreation;
+  document.getElementById("detailsDeadline").textContent = details.deadline;
+  
+  // Remplir la table des outils
+  tbody.innerHTML = "";
+  
+  const outils = details.outils;
+  
+  if (!outils || outils.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px;">Aucun outil</td></tr>';
+  } else {
+    outils.forEach(o => {
+      const statusClass = o.statut === "Terminé" ? "status-success" : "status-info";
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><strong>${o.outil || "-"}</strong></td>
+        <td><span class="badge ${statusClass}">${o.statut || "En cours"}</span></td>
+        <td>${o.date || "-"}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+  
+  // Afficher la modal
+  modal.classList.remove("hidden");
+}
+
+function closeDetails() {
+  const modal = document.getElementById("detailsModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+}
+
+
 // ===============================
 window.loadUser = function () {
   const i = el.matricule.value;
@@ -426,7 +499,21 @@ window.save = async function () {
       el.msg.textContent = "✅ Enregistré avec succès";
       el.msg.style.color = "green";
 
+      // Recharger les données du serveur pour mettre à jour Etat et StatutSuivi (formules)
       await loadUsers();
+      
+      // Récupérer le matricule du currentUser avant de le réinitialiser
+      const matriculeToReload = currentUser.matricule;
+      
+      // Trouver le nouvel index et recharger le formulaire
+      for (let key in users) {
+        if (users[key].matricule === matriculeToReload) {
+          el.matricule.value = key;
+          loadUser();
+          return;
+        }
+      }
+      
       resetForm();
     } else {
       el.msg.textContent = "❌ Erreur lors de l'enregistrement";
@@ -499,12 +586,31 @@ function renderDashboard(data) {
   if (!tbody) return;
 
   tbody.innerHTML = "";
+  detailsCache = {}; // Vider le cache avant de remplir
 
-  data.forEach(row => {
+  data.forEach((row, index) => {
     const suiviClass =
       row.statutSuivi === "Respecté"   ? "status-success" :
       row.statutSuivi === "Non respecté" ? "status-danger" :
       "status-info";
+
+    const modifyBtn = row.etat === "En cours" 
+      ? `<button class="btn btn-action btn-modify" onclick="editUser('${row.matricule}')">✏️ Modifier</button>`
+      : `<button class="btn btn-action btn-disabled" disabled>✓ Terminé</button>`;
+
+    // Créer un ID unique pour ce détail
+    const detailId = `detail-${index}`;
+    
+    // Stocker les données dans le cache
+    detailsCache[detailId] = {
+      matricule: row.matricule,
+      nom: row.nom,
+      dateCreation: row.dateCreation || "-",
+      deadline: row.deadline || "-",
+      outils: row.outils || []
+    };
+
+    const detailBtn = `<button class="btn btn-action btn-detail" onclick="showDetails('${detailId}')">👁️ Détail</button>`;
 
     tbody.innerHTML += `
       <tr>
@@ -513,13 +619,13 @@ function renderDashboard(data) {
         <td>${row.nom || ""}</td>
         <td>${row.fonction || ""}</td>
         <td>${row.rattachement || ""}</td>
-        <td>${row.dateIntegration || ""}</td>
         <td>${row.login || ""}</td>
         <td>${row.dateCreation || ""}</td>
         <td>${row.deadline || ""}</td>
         <td>${row.etat || ""}</td>
         <td>${row.dateFin || ""}</td>
         <td><span class="badge ${suiviClass}">${row.statutSuivi || ""}</span></td>
+        <td>${modifyBtn} ${detailBtn}</td>
       </tr>
     `;
   });
@@ -639,10 +745,10 @@ function setupTableFilters() {
       const matricule = row.cells[0]?.textContent.toLowerCase() || "";
       const statut    = row.cells[1]?.textContent.toLowerCase() || "";
       const nom       = row.cells[2]?.textContent.toLowerCase() || "";
-      const login     = row.cells[6]?.textContent.toLowerCase() || "";
+      const login     = row.cells[5]?.textContent.toLowerCase() || "";
 
-      const etat  = row.cells[9]?.textContent || "";
-      const suivi = row.cells[11]?.textContent || "";
+      const etat  = row.cells[8]?.textContent || "";
+      const suivi = row.cells[10]?.textContent || "";
 
       const matchSearch =
         matricule.includes(searchTerm) ||
@@ -700,3 +806,5 @@ async function testApi() {
     return false;
   }
 }
+
+// bonjour
