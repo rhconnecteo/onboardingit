@@ -610,7 +610,7 @@ function renderDashboard(data) {
       outils: row.outils || []
     };
 
-    const detailBtn = `<button class="btn btn-action btn-detail" onclick="showDetails('${detailId}')">👁️ Détail</button>`;
+    const detailBtn = `<button class="btn btn-action btn-detail" onclick="showDetails('${detailId}')">🧐 Détail</button>`;
 
     tbody.innerHTML += `
       <tr>
