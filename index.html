@@ -9,8 +9,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<!-- bonjour -->
- <!-- dfguiougfhjk -->
+
 <body>
 
   <header class="header">
@@ -178,13 +177,13 @@
             <th>Nom</th>
             <th>Fonction</th>
             <th>Rattachement</th>
-            <th>Date Integration</th>
             <th>Login</th>
             <th>Date Création</th>
             <th>Deadline</th>
             <th>Etat</th>
             <th>Date Fin</th>
             <th>Statut Suivi</th>
+            <th>Actions</th>
           </tr>
         </thead>
 
@@ -195,6 +194,52 @@
   </section>
 
 
+  <!-- ======================
+        MODAL DETAILS OUTILS
+  ======================= -->
+  <div id="detailsModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Détails - <span id="detailsModalMatricule"></span> <span id="detailsModalNom"></span></h3>
+        <button class="modal-close" onclick="closeDetails()">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Infos générales -->
+        <div class="details-info">
+          <div class="info-item">
+            <label>📅 Date de création (Login)</label>
+            <div class="info-value" id="detailsDateCreation">-</div>
+          </div>
+          <div class="info-item">
+            <label>⏰ Deadline</label>
+            <div class="info-value" id="detailsDeadline">-</div>
+          </div>
+        </div>
+
+        <!-- Séparateur -->
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #e6e9ee;">
+
+        <!-- Détail des outils -->
+        <h4 style="margin: 0 0 15px 0; color: var(--muted); font-size: 13px; font-weight: 600;">Détail des outils</h4>
+        <table class="details-table">
+          <thead>
+            <tr>
+              <th>Outil</th>
+              <th>Statut</th>
+              <th>Date de création</th>
+            </tr>
+          </thead>
+          <tbody id="detailsTableBody">
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeDetails()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+<!-- Merci mon Dieu -->
   <script src="script.js"></script>
 </body>
 </html>
