@@ -9,6 +9,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxSwajBZ6VkFFdMIZsdZZf3
 // ===============================
 const el = {
   matricule: document.getElementById("matricule"),
+  affichageMatricule: document.getElementById("affichageMatricule"),
   nom: document.getElementById("nom"),
   statut: document.getElementById("statut"),
   fonction: document.getElementById("fonction"),
@@ -29,9 +30,94 @@ const el = {
 // 🔥 Liste des outils disponibles
 const OUTILS_DISPONIBLES = [
   { value: "S3", label: "S3" },
-  { value: "Sentinel", label: "Sentinel" },
-  { value: "TikTok", label: "TikTok" },
-  { value: "Facebook", label: "Facebook" }
+  { value: "Sentinel Mada", label: "Sentinel Mada" },
+  { value: "Ability", label: "Ability" },
+  { value: "Angaza", label: "Angaza" },
+  { value: "ARTEC", label: "ARTEC" },
+  { value: "BDC 1", label: "BDC 1" },
+  { value: "BDC 2", label: "BDC 2" },
+  { value: "ECMS", label: "ECMS" },
+  { value: "Klaod", label: "Klaod" },
+  { value: "Novacare (Astellia)", label: "Novacare (Astellia)" },
+  { value: "Pentaho", label: "Pentaho" },
+  { value: "Sage", label: "Sage" },
+  { value: "Sandvine", label: "Sandvine" },
+  { value: "SIMS Telma", label: "SIMS Telma" },
+  { value: "Sms Connect", label: "Sms Connect" },
+  { value: "Utiba 2Tmv", label: "Utiba 2Tmv" },
+  { value: "RBS NEW", label: "RBS NEW" },
+  { value: "POS", label: "POS" },
+  { value: "LOAN", label: "LOAN" },
+  { value: "Lynx", label: "Lynx" },
+  { value: "BO", label: "BO" },
+  { value: "Vocalcom", label: "Vocalcom" },
+  { value: "Zendesk", label: "Zendesk" },
+  { value: "Moodle", label: "Moodle" },
+  { value: "Charlie", label: "Charlie" },
+  { value: "Viber", label: "Viber" },
+  { value: "Skype", label: "Skype" },
+  { value: "Whatsapp", label: "Whatsapp" },
+  { value: "Outlook", label: "Outlook" },
+  { value: "Mail Office 365", label: "Mail Office 365" },
+  { value: "Office 365", label: "Office 365" },
+  { value: "Facebook", label: "Facebook" },
+  { value: "Dlreporting", label: "Dlreporting" },
+  { value: "Nextcloud", label: "Nextcloud" },
+  { value: "OGC Telma", label: "OGC Telma" },
+  { value: "Success Corner", label: "Success Corner" },
+  { value: "Scoring Tool", label: "Scoring Tool" },
+  { value: "Jupiter", label: "Jupiter" },
+  { value: "Dataviz", label: "Dataviz" },
+  { value: "Plateforme Mcb", label: "Plateforme Mcb" },
+  { value: "Utiba Mvola", label: "Utiba Mvola" },
+  { value: "Billrun", label: "Billrun" },
+  { value: "CBS Free", label: "CBS Free" },
+  { value: "Numlex", label: "Numlex" },
+  { value: "Sentinel Free", label: "Sentinel Free" },
+  { value: "Web Provisionning", label: "Web Provisionning" },
+  { value: "CBS Comores", label: "CBS Comores" },
+  { value: "CPS", label: "CPS" },
+  { value: "Sentinel Comores", label: "Sentinel Comores" },
+  { value: "Sims Telco", label: "Sims Telco" },
+  { value: "VMS", label: "VMS" },
+  { value: "REQ", label: "REQ" },
+  { value: "S2 Mayotte", label: "S2 Mayotte" },
+  { value: "S2 Réunion", label: "S2 Réunion" },
+  { value: "S2 Run", label: "S2 Run" },
+  { value: "S2 May", label: "S2 May" },
+  { value: "Sav Only", label: "Sav Only" },
+  { value: "Helios", label: "Helios" },
+  { value: "UPYA", label: "UPYA" },
+  { value: "Visio", label: "Visio" },
+  { value: "Service Now", label: "Service Now" },
+  { value: "YouTube", label: "YouTube" },
+  { value: "INOCX", label: "INOCX" },
+  { value: "Centraltest", label: "Centraltest" },
+  { value: "Linkedin", label: "Linkedin" },
+  { value: "SAGE RH", label: "SAGE RH" },
+  { value: "Adobe", label: "Adobe" },
+  { value: "Canva", label: "Canva" },
+  { value: "Instagram", label: "Instagram" },
+  { value: "Mojo", label: "Mojo" },
+  { value: "Aithor", label: "Aithor" },
+  { value: "SugarCRM", label: "SugarCRM" },
+  { value: "E-koragna", label: "E-koragna" },
+  { value: "Google Sheet", label: "Google Sheet" },
+  { value: "Google Collab", label: "Google Collab" },
+  { value: "Looker Studio", label: "Looker Studio" },
+  { value: "App Sheet", label: "App Sheet" },
+  { value: "Whois.com", label: "Whois.com" },
+  { value: "DOLIBAR Callity", label: "DOLIBAR Callity" },
+  { value: "Bot Agent", label: "Bot Agent" },
+  { value: "Cogneed", label: "Cogneed" },
+  { value: "CRM Client", label: "CRM Client" },
+  { value: "Odigo", label: "Odigo" },
+  { value: "I Advize", label: "I Advize" },
+  { value: "KEYYO", label: "KEYYO" },
+  { value: "SAGE 1000", label: "SAGE 1000" },
+  { value: "BAYA", label: "BAYA" },
+  { value: "Winscp", label: "Winscp" },
+  { value: "Python", label: "Python" }
 ];
 
 let users = [];
@@ -269,6 +355,7 @@ window.loadUser = function () {
   el.dateFin.removeEventListener('change', handleDateFinChange);
   el.dateFin.addEventListener('change', handleDateFinChange);
 
+  el.affichageMatricule.textContent = currentUser.matricule || "";
   el.nom.textContent = currentUser.nom || "";
   el.statut.textContent = currentUser.statut || "";
   el.fonction.textContent = currentUser.fonction || "";
@@ -366,6 +453,7 @@ function renderOutils() {
   });
 
   setupOutilsEvents();
+  updateOutilsDisabledState();
 }
 
 
@@ -374,7 +462,8 @@ function renderOutils() {
 // ===============================
 window.addOutil = function () {
   if (!currentUser) {
-    alert("Veuillez d'abord sélectionner un collaborateur");
+    el.msg.textContent = "❌ Veuillez d'abord sélectionner un collaborateur";
+    el.msg.style.color = "red";
     return;
   }
 
@@ -387,6 +476,8 @@ window.addOutil = function () {
 
   renderOutils();
   updateEtat();
+  setupOutilsEvents();
+  updateOutilsDisabledState();
 };
 
 
@@ -400,7 +491,8 @@ window.deleteOutil = function (idx) {
   if (!outil) return;
 
   if (outil.statut !== "En cours") {
-    alert("Impossible de supprimer un outil terminé");
+    el.msg.textContent = "❌ Impossible de supprimer un outil terminé";
+    el.msg.style.color = "red";
     return;
   }
 
@@ -413,6 +505,35 @@ window.deleteOutil = function (idx) {
 // ===============================
 // EVENTS OUTILS
 // ===============================
+function updateOutilsDisabledState() {
+  const allSelects = document.querySelectorAll(".outil-nom");
+  
+  // Récupérer les outils sélectionnés (sauf les vides)
+  const selectedOutils = new Set();
+  allSelects.forEach(select => {
+    if (select.value && select.value.trim() !== "") {
+      selectedOutils.add(select.value);
+    }
+  });
+
+  // Pour chaque select, désactiver les options déjà sélectionnées ailleurs
+  allSelects.forEach(select => {
+    const currentValue = select.value;
+    const options = select.querySelectorAll("option");
+    
+    options.forEach(option => {
+      if (option.value && option.value.trim() !== "") {
+        // Désactiver si sélectionné AILLEURS (pas dans ce select)
+        if (selectedOutils.has(option.value) && option.value !== currentValue) {
+          option.disabled = true;
+        } else {
+          option.disabled = false;
+        }
+      }
+    });
+  });
+}
+
 function setupOutilsEvents() {
   const outils = document.querySelectorAll(".outil-nom");  // C'est maintenant un SELECT
   const selects = document.querySelectorAll(".outil-statut");
@@ -433,6 +554,9 @@ function setupOutilsEvents() {
           sel.disabled = currentUser.outils[idx].statut === "Terminé";
         }
       }
+
+      // 🔥 Mettre à jour l'état des options pour éviter les doublons
+      updateOutilsDisabledState();
     });
   });
 
@@ -541,7 +665,31 @@ window.save = async function () {
     currentUser.outils[idx].statut = sel.value;
   });
 
-  // 🔥 Supprimer les outils vides
+  // 🔥 VALIDATION : Vérifier s'il y a des outils vides
+  const outilsVides = currentUser.outils.filter(o => !o.outil || o.outil.trim() === "");
+  
+  if (outilsVides.length > 0) {
+    // Mettre la zone d'outils en rouge
+    el.outils.style.border = "3px solid #ef4444";
+    el.outils.style.backgroundColor = "#fef2f2";
+    el.outils.style.padding = "16px";
+    el.outils.style.borderRadius = "8px";
+    
+    el.msg.textContent = "❌ Veuillez sélectionner un outil pour chaque ligne AVANT d'enregistrer !";
+    el.msg.style.color = "red";
+    el.msg.style.fontWeight = "bold";
+    
+    isSaving = false;
+    return;
+  } else {
+    // Enlever le style rouge si validation OK
+    el.outils.style.border = "";
+    el.outils.style.backgroundColor = "";
+    el.outils.style.padding = "";
+    el.outils.style.borderRadius = "";
+  }
+
+  // 🔥 Supprimer les outils vides (si validation OK)
   currentUser.outils = currentUser.outils.filter(o => o.outil && o.outil.trim() !== "");
 
   updateEtat();
@@ -844,7 +992,7 @@ function showApiError(message) {
     node.textContent = message + " — Vérifiez le déploiement Web App et les permissions (Anyone, even anonymous).";
     node.style.color = "red";
   } else {
-    alert(message);
+    console.error(message);
   }
 
   console.warn(message);
