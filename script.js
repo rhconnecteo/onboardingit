@@ -1,7 +1,7 @@
 // ===============================
 // CONFIG API
 // ===============================
-const API_URL = "https://script.google.com/macros/s/AKfycbxP10YcjzjKowXrtNT0yBG1UTSjrQ2jt7IfMtw1WvapgpBNRtaf3o2EhgeA3urmLTvzcA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxSwajBZ6VkFFdMIZsdZZf32JhBFH9WEYGi2aKtf_bIoEsCkeFiPK1rzZC3eekXDTFm_Q/exec";
 
 
 // ===============================
@@ -26,12 +26,21 @@ const el = {
   formCard: document.getElementById("formCard")
 };
 
+// 🔥 Liste des outils disponibles
+const OUTILS_DISPONIBLES = [
+  { value: "S3", label: "S3" },
+  { value: "Sentinel", label: "Sentinel" },
+  { value: "TikTok", label: "TikTok" },
+  { value: "Facebook", label: "Facebook" }
+];
+
 let users = [];
 let currentUser = null;
 let dashboardData = [];
 let chartSuivi = null;
 let chartEtat = null;
 let detailsCache = {}; // Cache pour stocker les données de détails
+let isSaving = false; // 🔥 Flag pour empêcher les clics multiples
 
 
 // ===============================
@@ -124,7 +133,7 @@ async function loadUsers() {
 
     users.forEach((u, index) => {
       const opt = document.createElement("option");
-      opt.value = index;
+      opt.value = u.matricule;  // 🔥 Utiliser le matricule au lieu de l'index
       opt.textContent = `${u.matricule} - ${u.nom}`;
       el.matricule.appendChild(opt);
     });
@@ -137,20 +146,42 @@ async function loadUsers() {
 
 
 // ===============================
+// NORMALIZE OUTILS (migrate old structure)
+// ===============================
+function normalizeOutils(outils) {
+  if (!outils || !Array.isArray(outils)) return [];
+  
+  return outils.map(o => {
+    // Si l'outil utilise l'ancienne structure avec 'date', le convertir
+    if (o.date && !o.dateDebut && !o.dateFin) {
+      return {
+        outil: o.outil || "",
+        statut: o.statut || "En cours",
+        dateDebut: o.date || "",
+        dateFin: ""
+      };
+    }
+    // Sinon, s'assurer que dateDebut et dateFin existent
+    return {
+      outil: o.outil || "",
+      statut: o.statut || "En cours",
+      dateDebut: o.dateDebut || "",
+      dateFin: o.dateFin || ""
+    };
+  });
+}
+
+
+// ===============================
 // LOAD USER IN FORM
 // ===============================
 // EDIT USER FROM DASHBOARD
 // ===============================
 function editUser(matricule) {
-  // Find user in the users array
-  for (let key in users) {
-    if (users[key].matricule === matricule) {
-      el.matricule.value = key;
-      loadUser();
-      showForm();
-      return;
-    }
-  }
+  // 🔥 Sélectionner directement par matricule
+  el.matricule.value = matricule;
+  loadUser();
+  showForm();
 }
 
 
@@ -184,7 +215,7 @@ function showDetails(detailId) {
   const outils = details.outils;
   
   if (!outils || outils.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px;">Aucun outil</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Aucun outil</td></tr>';
   } else {
     outils.forEach(o => {
       const statusClass = o.statut === "Terminé" ? "status-success" : "status-info";
@@ -192,7 +223,8 @@ function showDetails(detailId) {
       row.innerHTML = `
         <td><strong>${o.outil || "-"}</strong></td>
         <td><span class="badge ${statusClass}">${o.statut || "En cours"}</span></td>
-        <td>${o.date || "-"}</td>
+        <td>${o.dateDebut || "-"}</td>
+        <td>${o.dateFin || "-"}</td>
       `;
       tbody.appendChild(row);
     });
@@ -212,21 +244,27 @@ function closeDetails() {
 
 // ===============================
 window.loadUser = function () {
-  const i = el.matricule.value;
-  if (i === "") {
+  const matriculeSelected = el.matricule.value;
+  if (matriculeSelected === "") {
     el.msg.textContent = "";
     el.msg.style.color = "";
     return;
   }
 
-  currentUser = users[i];
+  // 🔥 Chercher par matricule au lieu de par index
+  currentUser = users.find(u => u.matricule === matriculeSelected);
 
   if (!currentUser) {
     resetForm();
     return;
   }
 
-  if (!currentUser.outils) currentUser.outils = [];
+  // Normaliser les outils (ancienne structure → nouvelle)
+  if (!currentUser.outils) {
+    currentUser.outils = [];
+  } else {
+    currentUser.outils = normalizeOutils(currentUser.outils);
+  }
 
   el.dateFin.removeEventListener('change', handleDateFinChange);
   el.dateFin.addEventListener('change', handleDateFinChange);
@@ -272,7 +310,10 @@ function renderOutils() {
 
       <div class="outil-box">
         <label>📋 Outil</label>
-        <input type="text" class="outil-nom" data-index="${idx}" value="${o.outil || ""}" placeholder="Nom de l'outil" />
+        <select class="outil-nom" data-index="${idx}">
+          <option value="">-- Choisir un outil --</option>
+          ${OUTILS_DISPONIBLES.map(t => `<option value="${t.value}" ${o.outil === t.value ? 'selected' : ''}>${t.label}</option>`).join('')}
+        </select>
       </div>
 
       <div class="outil-box">
@@ -284,8 +325,13 @@ function renderOutils() {
       </div>
 
       <div class="outil-box">
-        <label>📅 Date</label>
-        <input type="text" class="outil-date" data-index="${idx}" value="${o.date || ""}" readonly />
+        <label>📅 Début</label>
+        <input type="text" class="outil-dateDebut" data-index="${idx}" value="${o.dateDebut || ""}" readonly />
+      </div>
+
+      <div class="outil-box">
+        <label>🏁 Fin</label>
+        <input type="text" class="outil-dateFin" data-index="${idx}" value="${o.dateFin || ""}" readonly />
       </div>
 
       <button class="outil-delete-btn" data-index="${idx}" onclick="deleteOutil(${idx})" ${(o.statut || "En cours") !== "En cours" ? "disabled" : ""}>
@@ -335,7 +381,8 @@ window.addOutil = function () {
   currentUser.outils.push({
     outil: "",
     statut: "En cours",
-    date: ""
+    dateDebut: todayFR(),  // 🔥 Date du jour J
+    dateFin: ""
   });
 
   renderOutils();
@@ -367,12 +414,11 @@ window.deleteOutil = function (idx) {
 // EVENTS OUTILS
 // ===============================
 function setupOutilsEvents() {
-  const noms = document.querySelectorAll(".outil-nom");
+  const outils = document.querySelectorAll(".outil-nom");  // C'est maintenant un SELECT
   const selects = document.querySelectorAll(".outil-statut");
-  // const dates = document.querySelectorAll(".outil-date");  ← readonly
 
-  noms.forEach(inp => {
-    inp.addEventListener("input", (e) => {
+  outils.forEach(select => {
+    select.addEventListener("change", (e) => {
       const idx = parseInt(e.target.dataset.index);
       const val = e.target.value || "";
       currentUser.outils[idx].outil = val;
@@ -395,8 +441,8 @@ function setupOutilsEvents() {
       const idx = parseInt(e.target.dataset.index);
       currentUser.outils[idx].statut = e.target.value;
 
-      if (e.target.value === "Terminé" && !currentUser.outils[idx].date) {
-        currentUser.outils[idx].date = todayFR();
+      if (e.target.value === "Terminé" && !currentUser.outils[idx].dateFin) {
+        currentUser.outils[idx].dateFin = todayFR();  // 🔥 Date fin = aujourd'hui
       }
 
       updateEtat();
@@ -435,12 +481,13 @@ function updateEtat() {
   if (allTermine) {
     currentUser.etat = "Terminé";
 
+    // Récupérer les dates de fin (dateFin) pour trouver la plus récente
     const dates = outils
-      .filter(o => o.date && o.date !== "")
-      .map(o => o.date);
+      .filter(o => o.dateFin && o.dateFin !== "")
+      .map(o => o.dateFin);
 
     if (dates.length > 0) {
-      // dernière date (la plus récente si on suppose ordre chronologique)
+      // dernière date (la plus récente)
       currentUser.dateFin = dates[dates.length - 1];
     } else {
       currentUser.dateFin = todayFR();
@@ -466,11 +513,20 @@ function updateEtat() {
 // SAVE USER
 // ===============================
 window.save = async function () {
+  // 🔥 Empêcher les clics multiples avec le flag
+  if (isSaving) {
+    return;
+  }
+
   if (!currentUser) {
     el.msg.textContent = "❌ Veuillez sélectionner un matricule !";
     el.msg.style.color = "red";
     return;
   }
+
+  isSaving = true;
+  el.msg.textContent = "⏳ Enregistrement en cours...";
+  el.msg.style.color = "blue";
 
   const noms = document.querySelectorAll(".outil-nom");
   const statuts = document.querySelectorAll(".outil-statut");
@@ -484,6 +540,9 @@ window.save = async function () {
     const idx = parseInt(sel.dataset.index);
     currentUser.outils[idx].statut = sel.value;
   });
+
+  // 🔥 Supprimer les outils vides
+  currentUser.outils = currentUser.outils.filter(o => o.outil && o.outil.trim() !== "");
 
   updateEtat();
 
@@ -499,31 +558,29 @@ window.save = async function () {
       el.msg.textContent = "✅ Enregistré avec succès";
       el.msg.style.color = "green";
 
-      // Recharger les données du serveur pour mettre à jour Etat et StatutSuivi (formules)
+      // Recharger les données du serveur pour mettre à jour Etat et StatutSuivi
       await loadUsers();
       
-      // Récupérer le matricule du currentUser avant de le réinitialiser
+      // Récupérer le matricule du currentUser AVANT le reload
       const matriculeToReload = currentUser.matricule;
       
-      // Trouver le nouvel index et recharger le formulaire
-      for (let key in users) {
-        if (users[key].matricule === matriculeToReload) {
-          el.matricule.value = key;
-          loadUser();
-          return;
-        }
-      }
+      // Sélectionner à nouveau avec le matricule
+      el.matricule.value = matriculeToReload;
+      loadUser();
       
-      resetForm();
+      // IMPORTANT: Débloquer AVANT de terminer
+      isSaving = false;
     } else {
       el.msg.textContent = "❌ Erreur lors de l'enregistrement";
       el.msg.style.color = "red";
+      isSaving = false;
     }
 
   } catch (err) {
     console.error(err);
     el.msg.textContent = "❌ Impossible de contacter l'API";
     el.msg.style.color = "red";
+    isSaving = false;
   }
 };
 
