@@ -1,7 +1,7 @@
 // ===============================
 // CONFIG API
 // ===============================
-const API_URL = "https://script.google.com/macros/s/AKfycbxSwajBZ6VkFFdMIZsdZZf32JhBFH9WEYGi2aKtf_bIoEsCkeFiPK1rzZC3eekXDTFm_Q/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby9F0yKZquOMRFi0I4pucZtSq7eMjbyqNUUd-nVh6p3PeLhd7YutqiAyborkcMz3MAU2w/exec";
 
 
 // ===============================
@@ -24,7 +24,14 @@ const el = {
   statutSuivi: document.getElementById("statutSuivi"),
   msg: document.getElementById("msg"),
   dashboardCard: document.getElementById("dashboardCard"),
-  formCard: document.getElementById("formCard")
+  formCard: document.getElementById("formCard"),
+  detailCard: document.getElementById("detailCard"),
+  detailTableBody: document.getElementById("detailTableBody"),
+  detailEmptyMessage: document.getElementById("detailEmptyMessage"),
+  filterDetailMatricule: document.getElementById("filterDetailMatricule"),
+  filterDetailFonction: document.getElementById("filterDetailFonction"),
+  filterDetailRattachement: document.getElementById("filterDetailRattachement"),
+  filterDetailStatut: document.getElementById("filterDetailStatut")
 };
 
 // 🔥 Liste des outils disponibles
@@ -135,19 +142,35 @@ let isSaving = false; // 🔥 Flag pour empêcher les clics multiples
 function showDashboard() {
   el.formCard.classList.add("hidden");
   el.dashboardCard.classList.remove("hidden");
+  el.detailCard.classList.add("hidden");
 
   document.getElementById("btnForm")?.classList.remove("active");
   document.getElementById("btnDash")?.classList.add("active");
+  document.getElementById("btnDetail")?.classList.remove("active");
 
   loadDashboard();
 }
 
 function showForm() {
   el.dashboardCard.classList.add("hidden");
+  el.detailCard.classList.add("hidden");
   el.formCard.classList.remove("hidden");
 
   document.getElementById("btnDash")?.classList.remove("active");
+  document.getElementById("btnDetail")?.classList.remove("active");
   document.getElementById("btnForm")?.classList.add("active");
+}
+
+function showDetail() {
+  el.formCard.classList.add("hidden");
+  el.dashboardCard.classList.add("hidden");
+  el.detailCard.classList.remove("hidden");
+
+  document.getElementById("btnForm")?.classList.remove("active");
+  document.getElementById("btnDash")?.classList.remove("active");
+  document.getElementById("btnDetail")?.classList.add("active");
+
+  loadDetail();
 }
 
 
@@ -242,14 +265,16 @@ function normalizeOutils(outils) {
     if (o.date && !o.dateDebut && !o.dateFin) {
       return {
         outil: o.outil || "",
+        ticket: o.ticket || "",
         statut: o.statut || "En cours",
         dateDebut: o.date || "",
         dateFin: ""
       };
     }
-    // Sinon, s'assurer que dateDebut et dateFin existent
+    // Sinon, s'assurer que tous les champs existent
     return {
       outil: o.outil || "",
+      ticket: o.ticket || "",
       statut: o.statut || "En cours",
       dateDebut: o.dateDebut || "",
       dateFin: o.dateFin || ""
@@ -404,6 +429,11 @@ function renderOutils() {
       </div>
 
       <div class="outil-box">
+        <label>🎟️ N° Ticket</label>
+        <input type="text" class="outil-ticket" data-index="${idx}" value="${o.ticket || ""}" placeholder="Ex: Insérez le numéro de ticket..." />
+      </div>
+
+      <div class="outil-box">
         <label>✓ Statut</label>
         <select class="outil-statut" data-index="${idx}" ${(!o.outil || String(o.outil).trim() === "" || o.statut === "Terminé") ? "disabled" : ""}>
           <option value="En cours" ${(o.statut || "En cours") === "En cours" ? "selected" : ""}>En cours</option>
@@ -413,7 +443,7 @@ function renderOutils() {
 
       <div class="outil-box">
         <label>📅 Début</label>
-        <input type="text" class="outil-dateDebut" data-index="${idx}" value="${o.dateDebut || ""}" readonly />
+        <input type="date" class="outil-dateDebut" data-index="${idx}" value="${convertToISO(o.dateDebut || "")}" />
       </div>
 
       <div class="outil-box">
@@ -469,6 +499,7 @@ window.addOutil = function () {
 
   currentUser.outils.push({
     outil: "",
+    ticket: "",
     statut: "En cours",
     dateDebut: todayFR(),  // 🔥 Date du jour J
     dateFin: ""
@@ -537,6 +568,8 @@ function updateOutilsDisabledState() {
 function setupOutilsEvents() {
   const outils = document.querySelectorAll(".outil-nom");  // C'est maintenant un SELECT
   const selects = document.querySelectorAll(".outil-statut");
+  const tickets = document.querySelectorAll(".outil-ticket");
+  const dateDebuts = document.querySelectorAll(".outil-dateDebut");
 
   outils.forEach(select => {
     select.addEventListener("change", (e) => {
@@ -571,6 +604,23 @@ function setupOutilsEvents() {
 
       updateEtat();
       renderOutils();   // refresh badges + disabled states
+    });
+  });
+
+  // 🔥 Event listener pour N° Ticket
+  tickets.forEach(input => {
+    input.addEventListener("change", (e) => {
+      const idx = parseInt(e.target.dataset.index);
+      currentUser.outils[idx].ticket = e.target.value || "";
+    });
+  });
+
+  // 🔥 Event listener pour Date Début
+  dateDebuts.forEach(input => {
+    input.addEventListener("change", (e) => {
+      const idx = parseInt(e.target.dataset.index);
+      const dateISO = e.target.value || "";
+      currentUser.outils[idx].dateDebut = convertToFR(dateISO);
     });
   });
 }
@@ -803,20 +853,6 @@ function renderDashboard(data) {
       ? `<button class="btn btn-action btn-modify" onclick="editUser('${row.matricule}')">✏️ Modifier</button>`
       : `<button class="btn btn-action btn-disabled" disabled>✓ Terminé</button>`;
 
-    // Créer un ID unique pour ce détail
-    const detailId = `detail-${index}`;
-    
-    // Stocker les données dans le cache
-    detailsCache[detailId] = {
-      matricule: row.matricule,
-      nom: row.nom,
-      dateCreation: row.dateCreation || "-",
-      deadline: row.deadline || "-",
-      outils: row.outils || []
-    };
-
-    const detailBtn = `<button class="btn btn-action btn-detail" onclick="showDetails('${detailId}')">🧐 Détail</button>`;
-
     tbody.innerHTML += `
       <tr>
         <td><strong>${row.matricule || ""}</strong></td>
@@ -830,7 +866,7 @@ function renderDashboard(data) {
         <td>${row.etat || ""}</td>
         <td>${row.dateFin || ""}</td>
         <td><span class="badge ${suiviClass}">${row.statutSuivi || ""}</span></td>
-        <td>${modifyBtn} ${detailBtn}</td>
+        <td>${modifyBtn}</td>
       </tr>
     `;
   });
@@ -922,6 +958,179 @@ function updateCharts() {
     });
   } catch (err) {
     console.error("Erreur création graphique Etat:", err);
+  }
+}
+
+
+// ===============================
+// LOAD DETAIL
+// ===============================
+async function loadDetail() {
+  try {
+    const res = await fetch(`${API_URL}?action=getDashboard`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
+    dashboardData = data || [];
+
+    // Populer les filtres
+    populateDetailFilters();
+
+    // Afficher les détails
+    renderDetailTable(dashboardData);
+
+  } catch (err) {
+    console.error("loadDetail failed", err);
+    el.detailEmptyMessage.style.display = "block";
+    el.detailEmptyMessage.textContent = `❌ Impossible de charger les détails: ${err.message}`;
+  }
+}
+
+// ===============================
+// POPULATE DETAIL FILTERS
+// ===============================
+function populateDetailFilters() {
+  // Matricules
+  const matricules = [...new Set(dashboardData.map(u => u.matricule).filter(m => m))];
+  el.filterDetailMatricule.innerHTML = '<option value="">-- Tous les matricules --</option>';
+  matricules.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m;
+    opt.textContent = m;
+    el.filterDetailMatricule.appendChild(opt);
+  });
+
+  // Fonctions
+  const fonctions = [...new Set(dashboardData.map(u => u.fonction).filter(f => f))];
+  el.filterDetailFonction.innerHTML = '<option value="">-- Toutes les fonctions --</option>';
+  fonctions.forEach(f => {
+    const opt = document.createElement("option");
+    opt.value = f;
+    opt.textContent = f;
+    el.filterDetailFonction.appendChild(opt);
+  });
+
+  // Rattachements
+  const rattachements = [...new Set(dashboardData.map(u => u.rattachement).filter(r => r))];
+  el.filterDetailRattachement.innerHTML = '<option value="">-- Tous les rattachements --</option>';
+  rattachements.forEach(r => {
+    const opt = document.createElement("option");
+    opt.value = r;
+    opt.textContent = r;
+    el.filterDetailRattachement.appendChild(opt);
+  });
+}
+
+// ===============================
+// APPLY DETAIL FILTERS
+// ===============================
+function applyDetailFilters() {
+  const matricule = el.filterDetailMatricule.value;
+  const fonction = el.filterDetailFonction.value;
+  const rattachement = el.filterDetailRattachement.value;
+  const statut = el.filterDetailStatut.value;
+
+  const filteredData = dashboardData.filter(u => {
+    const matchMatricule = !matricule || u.matricule === matricule;
+    const matchFonction = !fonction || u.fonction === fonction;
+    const matchRattachement = !rattachement || u.rattachement === rattachement;
+    
+    // Filtrer par statut: vérifier si au moins un outil a le statut demandé
+    let matchStatut = true;
+    if (statut) {
+      if (!u.outils || u.outils.length === 0) {
+        matchStatut = false;
+      } else {
+        matchStatut = u.outils.some(o => o.statut === statut);
+      }
+    }
+    
+    return matchMatricule && matchFonction && matchRattachement && matchStatut;
+  });
+
+  renderDetailTable(filteredData);
+}
+
+// ===============================
+// RESET DETAIL FILTERS
+// ===============================
+function resetDetailFilters() {
+  el.filterDetailMatricule.value = "";
+  el.filterDetailFonction.value = "";
+  el.filterDetailRattachement.value = "";
+  el.filterDetailStatut.value = "";
+  renderDetailTable(dashboardData);
+}
+
+// ===============================
+// RENDER DETAIL TABLE
+// ===============================
+function renderDetailTable(data) {
+  el.detailTableBody.innerHTML = "";
+  el.detailEmptyMessage.style.display = "none";
+
+  // Créer une liste d'outils (déploiement)
+  const rows = [];
+
+  data.forEach(user => {
+    if (!user.outils || user.outils.length === 0) {
+      rows.push({
+        matricule: user.matricule,
+        nom: user.nom,
+        fonction: user.fonction,
+        rattachement: user.rattachement,
+        login: user.login,
+        outil: "---",
+        ticket: "---",
+        statut: "---",
+        dateDebut: "---",
+        dateFin: "---"
+      });
+    } else {
+      user.outils.forEach(outil => {
+        rows.push({
+          matricule: user.matricule,
+          nom: user.nom,
+          fonction: user.fonction,
+          rattachement: user.rattachement,
+          login: user.login,
+          outil: outil.outil || "---",
+          ticket: outil.ticket || "---",
+          statut: outil.statut || "---",
+          dateDebut: outil.dateDebut || "---",
+          dateFin: outil.dateFin || "---"
+        });
+      });
+    }
+  });
+
+  if (rows.length === 0) {
+    el.detailEmptyMessage.style.display = "block";
+    el.detailEmptyMessage.textContent = "Aucune donnée à afficher";
+  } else {
+    rows.forEach(row => {
+      const tr = document.createElement("tr");
+      const editBtn = `<button class="btn-edit" onclick="editUser('${row.matricule}')">✏️ Modifier</button>`;
+      
+      tr.innerHTML = `
+        <td><strong>${row.matricule}</strong></td>
+        <td>${row.nom}</td>
+        <td>${row.fonction}</td>
+        <td>${row.rattachement}</td>
+        <td>${row.login}</td>
+        <td>${row.outil}</td>
+        <td>${row.ticket}</td>
+        <td>
+          <span class="badge ${row.statut === 'Terminé' ? 'status-success' : 'status-info'}">
+            ${row.statut}
+          </span>
+        </td>
+        <td>${row.dateDebut}</td>
+        <td>${row.dateFin}</td>
+        <td>${editBtn}</td>
+      `;
+      el.detailTableBody.appendChild(tr);
+    });
   }
 }
 

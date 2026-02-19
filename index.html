@@ -16,8 +16,9 @@
     <h1>Support IT - Suivi Outils</h1>
 
     <div class="header-buttons">
-      <button id="btnForm" class="btn active" onclick="showForm()">Formulaire</button>
-      <button id="btnDash" class="btn btn-secondary" onclick="showDashboard()">Dashboard</button>
+      <button id="btnForm" class="btn active" onclick="showForm()">📝 Formulaire</button>
+      <button id="btnDash" class="btn btn-secondary" onclick="showDashboard()">📊 Dashboard</button>
+      <button id="btnDetail" class="btn btn-secondary" onclick="showDetail()">📋 Détail</button>
     </div>
   </header>
 
@@ -27,10 +28,10 @@
   ======================= -->
   <section id="formCard" class="card">
 
-    <h2>Formulaire de suivi</h2>
+    <h2>📝 Formulaire de suivi</h2>
 
     <div class="form-group">
-      <label>Matricule</label>
+      <label>👤 Matricule</label>
       <select id="matricule" onchange="loadUser()">
         <option value="">-- Choisir un matricule --</option>
       </select>
@@ -39,62 +40,62 @@
     <div class="info-grid">
 
       <div>
-        <label>Matricule</label>
+        <label>👤 Matricule</label>
         <div id="affichageMatricule" class="readonly" style="font-weight: bold; color: #0891b2;"></div>
       </div>
 
       <div>
-        <label>Nom et Prénoms</label>
+        <label>👥 Nom et Prénoms</label>
         <div id="nom" class="readonly"></div>
       </div>
 
       <div>
-        <label>Statut</label>
+        <label>✓ Statut</label>
         <div id="statut" class="readonly"></div>
       </div>
 
       <div>
-        <label>Fonction</label>
+        <label>💼 Fonction</label>
         <div id="fonction" class="readonly"></div>
       </div>
 
       <div>
-        <label>Rattachement</label>
+        <label>🏢 Rattachement</label>
         <div id="rattachement" class="readonly"></div>
       </div>
 
       <div>
-        <label>Date d'intégration</label>
+        <label>📅 Date d'intégration</label>
         <div id="dateIntegration" class="readonly"></div>
       </div>
 
       <div>
-        <label>Login</label>
+        <label>🔐 Login</label>
         <div id="login" class="readonly"></div>
       </div>
 
       <div>
-        <label>Date de création</label>
+        <label>📆 Date de création</label>
         <div id="dateCreation" class="readonly"></div>
       </div>
 
       <div>
-        <label>Date de deadline</label>
+        <label>⏰ Date de deadline</label>
         <div id="deadline" class="readonly"></div>
       </div>
 
       <div>
-        <label>Etat</label>
+        <label>🎯 Etat</label>
         <div id="etat" class="readonly status-box"></div>
       </div>
 
       <div>
-        <label>Date Fin</label>
+        <label>🏁 Date Fin</label>
         <input type="text" id="dateFin" readonly />
       </div>
 
       <div>
-        <label>Statut Suivi</label>
+        <label>📊 Statut Suivi</label>
         <div id="statutSuivi" class="readonly"></div>
       </div>
 
@@ -103,7 +104,7 @@
 
     <hr/>
 
-    <h3>Outils</h3>
+    <h3>🛠️ Outils</h3>
 
     <div id="outils"></div>
 
@@ -112,7 +113,7 @@
     <span id="msg" class="msg-display"></span>
 
     <div class="actions">
-      <button class="btn btn-primary" onclick="save()">Enregistrer</button>
+      <button class="btn btn-primary" onclick="save()">💾 Enregistrer</button>
     </div>
 
   </section>
@@ -122,78 +123,149 @@
         DASHBOARD
   ======================= -->
   <section id="dashboardCard" class="card hidden">
-    <h2>Dashboard - Récapitulatif</h2>
+    <h2>📊 Dashboard - Récapitulatif</h2>
 
     <div class="dashboard-charts">
       <div class="chart-container">
-        <h3>Statut Suivi (proportionnel)</h3>
+        <h3>📈 Statut Suivi (proportionnel)</h3>
         <canvas id="chartSuivi"></canvas>
       </div>
       <div class="chart-container">
-        <h3>État Global (Terminé / En cours)</h3>
+        <h3>🎯 État Global (Terminé / En cours)</h3>
         <canvas id="chartEtat"></canvas>
       </div>
     </div>
 
     <div class="stats-row">
       <div class="stat-card">
-        <label>Total</label>
+        <label>📊 Total</label>
         <div class="stat-value" id="statTotal">0</div>
       </div>
       <div class="stat-card">
-        <label>En cours</label>
+        <label>⏳ En cours</label>
         <div class="stat-value" id="statEnCours">0</div>
       </div>
       <div class="stat-card stat-success">
-        <label>Respecté</label>
+        <label>✅ Respecté</label>
         <div class="stat-value" id="statRespecte">0</div>
       </div>
       <div class="stat-card stat-danger">
-        <label>Non respecté</label>
+        <label>❌ Non respecté</label>
         <div class="stat-value" id="statNonRespecte">0</div>
       </div>
     </div>
 
     <div class="filters">
-      <input type="text" id="searchBox" placeholder="Rechercher Matricule / Nom / Login" class="search-input">
+      <input type="text" id="searchBox" placeholder="🔍 Rechercher Matricule / Nom / Login" class="search-input">
 
       <select id="etatFilter">
-        <option value="">Tous les Etats</option>
-        <option value="En cours">En cours</option>
-        <option value="Terminé">Terminé</option>
+        <option value="">🎯 Tous les Etats</option>
+        <option value="En cours">⏳ En cours</option>
+        <option value="Terminé">✅ Terminé</option>
       </select>
 
       <select id="suiviFilter">
-        <option value="">Tous les Statuts Suivi</option>
-        <option value="Respecté">Respecté</option>
-        <option value="Non respecté">Non respecté</option>
-        <option value="En cours">En cours</option>
+        <option value="">📈 Tous les Statuts Suivi</option>
+        <option value="Respecté">✅ Respecté</option>
+        <option value="Non respecté">❌ Non respecté</option>
+        <option value="En cours">⏳ En cours</option>
       </select>
 
-      <button class="btn btn-secondary" onclick="loadDashboard()">Actualiser</button>
+      <button class="btn btn-secondary" onclick="loadDashboard()">🔄 Actualiser</button>
     </div>
 
     <div class="table-container">
       <table id="dashboardTable" class="dashboard-table">
         <thead>
           <tr>
-            <th>Matricule</th>
-            <th>Statut</th>
-            <th>Nom</th>
-            <th>Fonction</th>
-            <th>Rattachement</th>
-            <th>Login</th>
-            <th>Date Création</th>
-            <th>Deadline</th>
-            <th>Etat</th>
-            <th>Date Fin</th>
-            <th>Statut Suivi</th>
-            <th>Actions</th>
+            <th>👤 Matricule</th>
+            <th>✓ Statut</th>
+            <th>👥 Nom</th>
+            <th>💼 Fonction</th>
+            <th>🏢 Rattachement</th>
+            <th>🔐 Login</th>
+            <th>📆 Date Création</th>
+            <th>⏰ Deadline</th>
+            <th>🎯 Etat</th>
+            <th>🏁 Date Fin</th>
+            <th>📊 Statut Suivi</th>
+            <th>⚙️ Actions</th>
           </tr>
         </thead>
 
         <tbody></tbody>
       </table>
+    </div>
+
+  </section>
+
+
+  <!-- ======================
+        DETAIL OUTILS
+  ======================= -->
+  <section id="detailCard" class="card hidden">
+    <h2>📋 Liste des outils par collaborateur</h2>
+
+    <!-- Filtres -->
+    <div class="filters-container">
+      <div class="filter-group">
+        <label for="filterDetailMatricule">👤 Filtrer par Matricule</label>
+        <select id="filterDetailMatricule" onchange="applyDetailFilters()">
+          <option value="">-- Tous les matricules --</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="filterDetailFonction">💼 Filtrer par Fonction</label>
+        <select id="filterDetailFonction" onchange="applyDetailFilters()">
+          <option value="">-- Toutes les fonctions --</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="filterDetailRattachement">🏢 Filtrer par Rattachement</label>
+        <select id="filterDetailRattachement" onchange="applyDetailFilters()">
+          <option value="">-- Tous les rattachements --</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="filterDetailStatut">✓ Filtrer par Statut</label>
+        <select id="filterDetailStatut" onchange="applyDetailFilters()">
+          <option value="">-- Tous les statuts --</option>
+          <option value="En cours">⏳ En cours</option>
+          <option value="Terminé">✅ Terminé</option>
+        </select>
+      </div>
+
+      <button class="btn btn-secondary" onclick="resetDetailFilters()">🔄 Réinitialiser</button>
+    </div>
+
+    <!-- Tableau -->
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>👤 Matricule</th>
+            <th>👥 Nom</th>
+            <th>💼 Fonction</th>
+            <th>🏢 Rattachement</th>
+            <th>🔐 Login</th>
+            <th>🛠️ Outil</th>
+            <th>🎟️ N° Ticket</th>
+            <th>✓ Statut</th>
+            <th>📅 Date Début</th>
+            <th>🏁 Date Fin</th>
+            <th>⚙️ Actions</th>
+          </tr>
+        </thead>
+        <tbody id="detailTableBody">
+        </tbody>
+      </table>
+    </div>
+
+    <div id="detailEmptyMessage" style="text-align: center; padding: 20px; color: #999; display: none;">
+      Aucune donnée à afficher
     </div>
 
   </section>
@@ -240,7 +312,7 @@
         </table>
       </div>
       <!-- <div class="modal-footer">
-        <button class="btn custom-btn" onclick="closeDetails()">Fermer</button>
+        <button class="btn custom-btn" onclick="closeDetails()">✕ Fermer</button>
 
       </div> -->
     </div>
