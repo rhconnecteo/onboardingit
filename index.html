@@ -12,6 +12,50 @@
 
 <body>
 
+  <!-- ====== SECTION LOGIN ====== -->
+  <div id="loginSection" class="login-overlay">
+    <div class="login-container">
+      <div class="login-box">
+        <div class="login-header">
+          <h1>🔐 Authentification</h1>
+          <p>Support IT - Suivi Outils</p>
+        </div>
+        
+        <form id="loginForm" class="login-form">
+          <div class="login-form-group">
+            <label for="username">👤 Utilisateur</label>
+            <input 
+              type="text" 
+              id="username" 
+              name="username" 
+              placeholder="Entrez votre identifiant" 
+              required 
+              autocomplete="username"
+            >
+          </div>
+
+          <div class="login-form-group">
+            <label for="password">🔑 Mot de passe</label>
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              placeholder="Entrez votre mot de passe" 
+              required 
+              autocomplete="current-password"
+            >
+          </div>
+
+          <div id="loginMessage" class="login-message"></div>
+
+          <button type="submit" class="btn btn-login">
+            🚀 Se connecter
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <header class="header">
     <h1>Support IT - Suivi Outils</h1>
 

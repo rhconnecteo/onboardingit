@@ -1,38 +1,54 @@
 // ===============================
+// AUTHENTIFICATION
+// ===============================
+const AUTH_USERNAME = "admin";
+const AUTH_PASSWORD = "support_it";
+
+let isAuthenticated = false;
+
+// ===============================
 // CONFIG API
 // ===============================
 const API_URL = "https://script.google.com/macros/s/AKfycby9F0yKZquOMRFi0I4pucZtSq7eMjbyqNUUd-nVh6p3PeLhd7YutqiAyborkcMz3MAU2w/exec";
 
-
 // ===============================
 // ELEMENTS HTML
 // ===============================
-const el = {
-  matricule: document.getElementById("matricule"),
-  affichageMatricule: document.getElementById("affichageMatricule"),
-  nom: document.getElementById("nom"),
-  statut: document.getElementById("statut"),
-  fonction: document.getElementById("fonction"),
-  rattachement: document.getElementById("rattachement"),
-  dateIntegration: document.getElementById("dateIntegration"),
-  login: document.getElementById("login"),
-  dateCreation: document.getElementById("dateCreation"),
-  deadline: document.getElementById("deadline"),
-  outils: document.getElementById("outils"),
-  etat: document.getElementById("etat"),
-  dateFin: document.getElementById("dateFin"),
-  statutSuivi: document.getElementById("statutSuivi"),
-  msg: document.getElementById("msg"),
-  dashboardCard: document.getElementById("dashboardCard"),
-  formCard: document.getElementById("formCard"),
-  detailCard: document.getElementById("detailCard"),
-  detailTableBody: document.getElementById("detailTableBody"),
-  detailEmptyMessage: document.getElementById("detailEmptyMessage"),
-  filterDetailMatricule: document.getElementById("filterDetailMatricule"),
-  filterDetailFonction: document.getElementById("filterDetailFonction"),
-  filterDetailRattachement: document.getElementById("filterDetailRattachement"),
-  filterDetailStatut: document.getElementById("filterDetailStatut")
-};
+let el = {};
+
+function initializeElements() {
+  el = {
+    loginSection: document.getElementById("loginSection"),
+    loginForm: document.getElementById("loginForm"),
+    loginMessage: document.getElementById("loginMessage"),
+    username: document.getElementById("username"),
+    password: document.getElementById("password"),
+    matricule: document.getElementById("matricule"),
+    affichageMatricule: document.getElementById("affichageMatricule"),
+    nom: document.getElementById("nom"),
+    statut: document.getElementById("statut"),
+    fonction: document.getElementById("fonction"),
+    rattachement: document.getElementById("rattachement"),
+    dateIntegration: document.getElementById("dateIntegration"),
+    login: document.getElementById("login"),
+    dateCreation: document.getElementById("dateCreation"),
+    deadline: document.getElementById("deadline"),
+    outils: document.getElementById("outils"),
+    etat: document.getElementById("etat"),
+    dateFin: document.getElementById("dateFin"),
+    statutSuivi: document.getElementById("statutSuivi"),
+    msg: document.getElementById("msg"),
+    dashboardCard: document.getElementById("dashboardCard"),
+    formCard: document.getElementById("formCard"),
+    detailCard: document.getElementById("detailCard"),
+    detailTableBody: document.getElementById("detailTableBody"),
+    detailEmptyMessage: document.getElementById("detailEmptyMessage"),
+    filterDetailMatricule: document.getElementById("filterDetailMatricule"),
+    filterDetailFonction: document.getElementById("filterDetailFonction"),
+    filterDetailRattachement: document.getElementById("filterDetailRattachement"),
+    filterDetailStatut: document.getElementById("filterDetailStatut")
+  };
+}
 
 // 🔥 Liste des outils disponibles
 const OUTILS_DISPONIBLES = [
@@ -1182,13 +1198,58 @@ function setupTableFilters() {
   suiviFilter.onchange = filterTable;
 }
 
+// ===============================
+// AUTHENTIFICATION
+// ===============================
+function setupLoginListener() {
+  el.loginForm.addEventListener("submit", function(e) {
+    e.preventDefault();
+    const username = el.username.value.trim();
+    const password = el.password.value.trim();
+    
+    if (username === AUTH_USERNAME && password === AUTH_PASSWORD) {
+      // Authentification réussie
+      isAuthenticated = true;
+      sessionStorage.setItem("authenticated", "true");
+      
+      el.loginMessage.innerHTML = "✅ Connexion réussie...";
+      el.loginMessage.className = "login-message show success";
+      
+      setTimeout(() => {
+        el.loginSection.classList.add("hidden");
+        initApp();
+      }, 1000);
+    } else {
+      // Authentification échouée
+      el.loginMessage.innerHTML = "❌ Identifiants incorrects";
+      el.loginMessage.className = "login-message show error";
+      el.password.value = "";
+    }
+  });
+}
+
+function checkAuthentication() {
+  // Vérifier si l'utilisateur est déjà connecté
+  if (sessionStorage.getItem("authenticated") === "true") {
+    isAuthenticated = true;
+    el.loginSection.classList.add("hidden");
+    initApp();
+  } else {
+    setupLoginListener();
+  }
+}
 
 // ===============================
 // INIT
 // ===============================
-(async function init() {
-  await loadUsers();
-})();
+document.addEventListener("DOMContentLoaded", function() {
+  initializeElements();
+  checkAuthentication();
+});
+
+function initApp() {
+  loadUsers();
+}
 
 
 // ===============================
