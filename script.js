@@ -46,7 +46,8 @@ function initializeElements() {
     filterDetailMatricule: document.getElementById("filterDetailMatricule"),
     filterDetailFonction: document.getElementById("filterDetailFonction"),
     filterDetailRattachement: document.getElementById("filterDetailRattachement"),
-    filterDetailStatut: document.getElementById("filterDetailStatut")
+    filterDetailStatut: document.getElementById("filterDetailStatut"),
+    filterDetailTicket: document.getElementById("filterDetailTicket")
   };
 }
 
@@ -264,7 +265,6 @@ async function loadUsers() {
     });
 
   } catch (err) {
-    console.error("loadUsers failed", err);
     showApiError(`Impossible de charger la liste des utilisateurs: ${err.message}`);
   }
 }
@@ -324,7 +324,6 @@ function showDetails(detailId) {
   // Récupérer les données du cache
   const details = detailsCache[detailId];
   if (!details) {
-    console.error("Détails non trouvés:", detailId);
     return;
   }
   
@@ -791,7 +790,6 @@ window.save = async function () {
     }
 
   } catch (err) {
-    console.error(err);
     el.msg.textContent = "❌ Impossible de contacter l'API";
     el.msg.style.color = "red";
     isSaving = false;
@@ -847,7 +845,6 @@ async function loadDashboard() {
     updateCharts();
 
   } catch (err) {
-    console.error("loadDashboard failed", err);
     showApiError(`Impossible de charger le dashboard: ${err.message}`);
   }
 }
@@ -943,7 +940,7 @@ function updateCharts() {
       }
     });
   } catch (err) {
-    console.error("Erreur création graphique Suivi:", err);
+    // Erreur silencieuse
   }
 
   // Chart Etat
@@ -973,7 +970,7 @@ function updateCharts() {
       }
     });
   } catch (err) {
-    console.error("Erreur création graphique Etat:", err);
+    // Erreur silencieuse
   }
 }
 
@@ -996,7 +993,6 @@ async function loadDetail() {
     renderDetailTable(dashboardData);
 
   } catch (err) {
-    console.error("loadDetail failed", err);
     el.detailEmptyMessage.style.display = "block";
     el.detailEmptyMessage.textContent = `❌ Impossible de charger les détails: ${err.message}`;
   }
@@ -1035,6 +1031,26 @@ function populateDetailFilters() {
     opt.textContent = r;
     el.filterDetailRattachement.appendChild(opt);
   });
+
+  // Tickets
+  const tickets = [];
+  dashboardData.forEach(u => {
+    if (u.outils && u.outils.length > 0) {
+      u.outils.forEach(outil => {
+        if (outil.ticket && outil.ticket !== "---") {
+          tickets.push(outil.ticket);
+        }
+      });
+    }
+  });
+  const uniqueTickets = [...new Set(tickets)].sort();
+  el.filterDetailTicket.innerHTML = '<option value="">-- Tous les tickets --</option>';
+  uniqueTickets.forEach(t => {
+    const opt = document.createElement("option");
+    opt.value = t;
+    opt.textContent = t;
+    el.filterDetailTicket.appendChild(opt);
+  });
 }
 
 // ===============================
@@ -1045,6 +1061,7 @@ function applyDetailFilters() {
   const fonction = el.filterDetailFonction.value;
   const rattachement = el.filterDetailRattachement.value;
   const statut = el.filterDetailStatut.value;
+  const ticket = el.filterDetailTicket.value;
 
   const filteredData = dashboardData.filter(u => {
     const matchMatricule = !matricule || u.matricule === matricule;
@@ -1060,8 +1077,18 @@ function applyDetailFilters() {
         matchStatut = u.outils.some(o => o.statut === statut);
       }
     }
+
+    // Filtrer par ticket: vérifier si au moins un outil a le ticket demandé
+    let matchTicket = true;
+    if (ticket) {
+      if (!u.outils || u.outils.length === 0) {
+        matchTicket = false;
+      } else {
+        matchTicket = u.outils.some(o => o.ticket === ticket);
+      }
+    }
     
-    return matchMatricule && matchFonction && matchRattachement && matchStatut;
+    return matchMatricule && matchFonction && matchRattachement && matchStatut && matchTicket;
   });
 
   renderDetailTable(filteredData);
@@ -1075,6 +1102,7 @@ function resetDetailFilters() {
   el.filterDetailFonction.value = "";
   el.filterDetailRattachement.value = "";
   el.filterDetailStatut.value = "";
+  el.filterDetailTicket.value = "";
   renderDetailTable(dashboardData);
 }
 
@@ -1261,11 +1289,7 @@ function showApiError(message) {
   if (node) {
     node.textContent = message + " — Vérifiez le déploiement Web App et les permissions (Anyone, even anonymous).";
     node.style.color = "red";
-  } else {
-    console.error(message);
   }
-
-  console.warn(message);
 }
 
 async function testApi() {
@@ -1273,10 +1297,8 @@ async function testApi() {
     const res = await fetch(`${API_URL}?action=getDashboard`, { method: "GET" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     await res.json();
-    console.info("API OK");
     return true;
   } catch (err) {
-    console.error("API test failed", err);
     showApiError("Test API a échoué: " + err.message);
     return false;
   }

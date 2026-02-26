@@ -282,6 +282,13 @@
         </select>
       </div>
 
+      <div class="filter-group">
+        <label for="filterDetailTicket">🎟️ Filtrer par N° Ticket</label>
+        <select id="filterDetailTicket" onchange="applyDetailFilters()">
+          <option value="">-- Tous les tickets --</option>
+        </select>
+      </div>
+
       <button class="btn btn-secondary" onclick="resetDetailFilters()">🔄 Réinitialiser</button>
     </div>
 
