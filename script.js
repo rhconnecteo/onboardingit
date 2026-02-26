@@ -1,5 +1,5 @@
 // ===============================
-// AUTHENTIFICATION
+// AUTHENTIFICATION_____
 // ===============================
 const AUTH_USERNAME = "admin";
 const AUTH_PASSWORD = "support_it";
