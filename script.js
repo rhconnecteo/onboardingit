@@ -43,12 +43,49 @@ function initializeElements() {
     detailCard: document.getElementById("detailCard"),
     detailTableBody: document.getElementById("detailTableBody"),
     detailEmptyMessage: document.getElementById("detailEmptyMessage"),
-    filterDetailMatricule: document.getElementById("filterDetailMatricule"),
-    filterDetailFonction: document.getElementById("filterDetailFonction"),
-    filterDetailRattachement: document.getElementById("filterDetailRattachement"),
-    filterDetailStatut: document.getElementById("filterDetailStatut"),
-    filterDetailTicket: document.getElementById("filterDetailTicket")
+    matriculeDropdown: document.getElementById("matriculeDropdown"),
+    fonctionDropdown: document.getElementById("fonctionDropdown"),
+    rattachementDropdown: document.getElementById("rattachementDropdown"),
+    statutDropdown: document.getElementById("statutDropdown"),
+    ticketDropdown: document.getElementById("ticketDropdown")
   };
+}
+
+// ===============================
+// GET FILTER VALUE (from searchable dropdown)
+// ===============================
+function getFilterValue(dropdownId) {
+  const dropdown = document.getElementById(dropdownId);
+  if (!dropdown) return "";
+  const selected = dropdown.querySelector(".dropdown-option.selected");
+  return selected ? selected.dataset.value : "";
+}
+
+// ===============================
+// SET FILTER VALUE (in searchable dropdown)
+// ===============================
+function setFilterValue(dropdownId, value) {
+  const dropdown = document.getElementById(dropdownId);
+  if (!dropdown) return;
+  
+  const input = dropdown.querySelector(".filter-search-input");
+  const options = dropdown.querySelectorAll(".dropdown-option");
+  
+  options.forEach(opt => opt.classList.remove("selected"));
+  
+  let selectedOption = null;
+  options.forEach(opt => {
+    if (opt.dataset.value === value) {
+      opt.classList.add("selected");
+      selectedOption = opt;
+    }
+  });
+  
+  if (selectedOption) {
+    input.value = selectedOption.textContent.trim();
+  } else {
+    input.value = "";
+  }
 }
 
 // 🔥 Liste des outils disponibles
@@ -1004,33 +1041,15 @@ async function loadDetail() {
 function populateDetailFilters() {
   // Matricules
   const matricules = [...new Set(dashboardData.map(u => u.matricule).filter(m => m))];
-  el.filterDetailMatricule.innerHTML = '<option value="">-- Tous les matricules --</option>';
-  matricules.forEach(m => {
-    const opt = document.createElement("option");
-    opt.value = m;
-    opt.textContent = m;
-    el.filterDetailMatricule.appendChild(opt);
-  });
+  populateDropdownOptions('matriculeDropdown', matricules);
 
   // Fonctions
   const fonctions = [...new Set(dashboardData.map(u => u.fonction).filter(f => f))];
-  el.filterDetailFonction.innerHTML = '<option value="">-- Toutes les fonctions --</option>';
-  fonctions.forEach(f => {
-    const opt = document.createElement("option");
-    opt.value = f;
-    opt.textContent = f;
-    el.filterDetailFonction.appendChild(opt);
-  });
+  populateDropdownOptions('fonctionDropdown', fonctions);
 
   // Rattachements
   const rattachements = [...new Set(dashboardData.map(u => u.rattachement).filter(r => r))];
-  el.filterDetailRattachement.innerHTML = '<option value="">-- Tous les rattachements --</option>';
-  rattachements.forEach(r => {
-    const opt = document.createElement("option");
-    opt.value = r;
-    opt.textContent = r;
-    el.filterDetailRattachement.appendChild(opt);
-  });
+  populateDropdownOptions('rattachementDropdown', rattachements);
 
   // Tickets
   const tickets = [];
@@ -1044,24 +1063,161 @@ function populateDetailFilters() {
     }
   });
   const uniqueTickets = [...new Set(tickets)].sort();
-  el.filterDetailTicket.innerHTML = '<option value="">-- Tous les tickets --</option>';
-  uniqueTickets.forEach(t => {
-    const opt = document.createElement("option");
-    opt.value = t;
-    opt.textContent = t;
-    el.filterDetailTicket.appendChild(opt);
+  populateDropdownOptions('ticketDropdown', uniqueTickets);
+}
+
+// ===============================
+// POPULATE DROPDOWN OPTIONS
+// ===============================
+function populateDropdownOptions(dropdownId, options) {
+  const dropdown = document.getElementById(dropdownId);
+  if (!dropdown) return;
+  
+  const optionsContainer = dropdown.querySelector(".dropdown-options");
+  
+  // Clear all options except the first "all" option
+  const firstOption = optionsContainer.querySelector(".dropdown-option");
+  optionsContainer.innerHTML = "";
+  optionsContainer.appendChild(firstOption);
+  
+  // Add new options
+  options.forEach(optValue => {
+    const optElement = document.createElement("div");
+    optElement.className = "dropdown-option";
+    optElement.dataset.value = optValue;
+    optElement.textContent = optValue;
+    optElement.onclick = function(e) {
+      e.stopPropagation();
+      selectDropdownOption(dropdownId, optValue);
+    };
+    optionsContainer.appendChild(optElement);
   });
 }
+
+// ===============================
+// SELECT DROPDOWN OPTION
+// ===============================
+function selectDropdownOption(dropdownId, value) {
+  setFilterValue(dropdownId, value);
+  const dropdown = document.getElementById(dropdownId);
+  const optionsContainer = dropdown.querySelector(".dropdown-options");
+  const selectedOption = dropdown.querySelector(`.dropdown-option[data-value="${value}"]`);
+  
+  // Scroll to selected option
+  if (selectedOption && optionsContainer.scrollTop !== undefined) {
+    selectedOption.scrollIntoView({ block: "nearest" });
+  }
+  
+  optionsContainer.classList.remove("show");
+  applyDetailFilters();
+}
+
+// ===============================
+// FILTER DROPDOWN OPTIONS (search functionality)
+// ===============================
+function filterDropdownOptions(input) {
+  const dropdownId = input.closest(".searchable-dropdown").id;
+  const dropdown = document.getElementById(dropdownId);
+  const optionsContainer = dropdown.querySelector(".dropdown-options");
+  const options = optionsContainer.querySelectorAll(".dropdown-option");
+  
+  const searchTerm = input.value.toLowerCase();
+  
+  // Show/hide options based on search
+  options.forEach(option => {
+    const text = option.textContent.toLowerCase();
+    if (text.includes(searchTerm)) {
+      option.classList.remove("hidden");
+    } else {
+      option.classList.add("hidden");
+    }
+  });
+  
+  // Show the dropdown when typing
+  if (searchTerm.length > 0 || input.value.length === 0) {
+    optionsContainer.classList.add("show");
+  }
+}
+
+// ===============================
+// HANDLE KEYBOARD NAVIGATION IN DROPDOWNS
+// ===============================
+document.addEventListener("keydown", function(e) {
+  const input = document.activeElement;
+  if (!input.classList.contains("filter-search-input")) return;
+  
+  const dropdownId = input.closest(".searchable-dropdown").id;
+  const dropdown = document.getElementById(dropdownId);
+  const optionsContainer = dropdown.querySelector(".dropdown-options");
+  const options = optionsContainer.querySelectorAll(".dropdown-option:not(.hidden)");
+  
+  if (e.key === "Escape") {
+    optionsContainer.classList.remove("show");
+    e.preventDefault();
+  } else if (e.key === "Enter") {
+    const firstVisible = options[0];
+    if (firstVisible) {
+      selectDropdownOption(dropdownId, firstVisible.dataset.value);
+    }
+    e.preventDefault();
+  } else if (e.key === "ArrowDown") {
+    const allOptions = dropdown.querySelectorAll(".dropdown-option");
+    const currentIndex = Array.from(allOptions).findIndex(opt => opt.classList.contains("selected"));
+    const nextIndex = Array.from(allOptions).findIndex((opt, idx) => idx > currentIndex && !opt.classList.contains("hidden"));
+    if (nextIndex !== -1) {
+      selectDropdownOption(dropdownId, allOptions[nextIndex].dataset.value);
+    }
+    e.preventDefault();
+  } else if (e.key === "ArrowUp") {
+    const allOptions = dropdown.querySelectorAll(".dropdown-option");
+    const currentIndex = Array.from(allOptions).findIndex(opt => opt.classList.contains("selected"));
+    let prevIndex = -1;
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      if (!allOptions[i].classList.contains("hidden")) {
+        prevIndex = i;
+        break;
+      }
+    }
+    if (prevIndex !== -1) {
+      selectDropdownOption(dropdownId, allOptions[prevIndex].dataset.value);
+    }
+    e.preventDefault();
+  }
+});
+
+// ===============================
+// CLOSE DROPDOWNS WHEN CLICKING OUTSIDE
+// ===============================
+document.addEventListener("click", function(event) {
+  const searchableDropdowns = document.querySelectorAll(".searchable-dropdown");
+  searchableDropdowns.forEach(dropdown => {
+    if (!dropdown.contains(event.target)) {
+      const optionsContainer = dropdown.querySelector(".dropdown-options");
+      optionsContainer.classList.remove("show");
+    }
+  });
+});
+
+// ===============================
+// OPEN DROPDOWNS WHEN CLICKING ON INPUT
+// ===============================
+document.addEventListener("click", function(event) {
+  if (event.target.classList.contains("filter-search-input")) {
+    const dropdown = event.target.closest(".searchable-dropdown");
+    const optionsContainer = dropdown.querySelector(".dropdown-options");
+    optionsContainer.classList.add("show");
+  }
+});
 
 // ===============================
 // APPLY DETAIL FILTERS
 // ===============================
 function applyDetailFilters() {
-  const matricule = el.filterDetailMatricule.value;
-  const fonction = el.filterDetailFonction.value;
-  const rattachement = el.filterDetailRattachement.value;
-  const statut = el.filterDetailStatut.value;
-  const ticket = el.filterDetailTicket.value;
+  const matricule = getFilterValue('matriculeDropdown');
+  const fonction = getFilterValue('fonctionDropdown');
+  const rattachement = getFilterValue('rattachementDropdown');
+  const statut = getFilterValue('statutDropdown');
+  const ticket = getFilterValue('ticketDropdown');
 
   const filteredData = dashboardData.filter(u => {
     const matchMatricule = !matricule || u.matricule === matricule;
@@ -1098,11 +1254,22 @@ function applyDetailFilters() {
 // RESET DETAIL FILTERS
 // ===============================
 function resetDetailFilters() {
-  el.filterDetailMatricule.value = "";
-  el.filterDetailFonction.value = "";
-  el.filterDetailRattachement.value = "";
-  el.filterDetailStatut.value = "";
-  el.filterDetailTicket.value = "";
+  setFilterValue('matriculeDropdown', '');
+  setFilterValue('fonctionDropdown', '');
+  setFilterValue('rattachementDropdown', '');
+  setFilterValue('statutDropdown', '');
+  setFilterValue('ticketDropdown', '');
+  
+  // Clear all search inputs
+  document.querySelectorAll(".filter-search-input").forEach(input => {
+    input.value = '';
+  });
+  
+  // Hide all dropdowns
+  document.querySelectorAll(".dropdown-options").forEach(container => {
+    container.classList.remove("show");
+  });
+  
   renderDetailTable(dashboardData);
 }
 

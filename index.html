@@ -17,8 +17,8 @@
     <div class="login-container">
       <div class="login-box">
         <div class="login-header">
-          <h1>🔐 Authentification</h1>
-          <p>Support IT - Suivi Outils</p>
+          <h1>🔐 Authentication</h1>
+          <p>IT Support - Tool Tracking</p>
         </div>
         
         <form id="loginForm" class="login-form">
@@ -252,41 +252,61 @@
 
     <!-- Filtres -->
     <div class="filters-container">
+      <!-- Matricule Filter -->
       <div class="filter-group">
-        <label for="filterDetailMatricule">👤 Filtrer par Matricule</label>
-        <select id="filterDetailMatricule" onchange="applyDetailFilters()">
-          <option value="">-- Tous les matricules --</option>
-        </select>
+        <label>👤 Filtrer par Matricule</label>
+        <div class="searchable-dropdown" id="matriculeDropdown">
+          <input type="text" class="filter-search-input" placeholder="🔍 Rechercher..." data-filter="matricule" onkeyup="filterDropdownOptions(this)">
+          <div class="dropdown-options">
+            <div class="dropdown-option" data-value="">-- Tous les matricules --</div>
+          </div>
+        </div>
       </div>
 
+      <!-- Fonction Filter -->
       <div class="filter-group">
-        <label for="filterDetailFonction">💼 Filtrer par Fonction</label>
-        <select id="filterDetailFonction" onchange="applyDetailFilters()">
-          <option value="">-- Toutes les fonctions --</option>
-        </select>
+        <label>💼 Filtrer par Fonction</label>
+        <div class="searchable-dropdown" id="fonctionDropdown">
+          <input type="text" class="filter-search-input" placeholder="🔍 Rechercher..." data-filter="fonction" onkeyup="filterDropdownOptions(this)">
+          <div class="dropdown-options">
+            <div class="dropdown-option" data-value="">-- Toutes les fonctions --</div>
+          </div>
+        </div>
       </div>
 
+      <!-- Rattachement Filter -->
       <div class="filter-group">
-        <label for="filterDetailRattachement">🏢 Filtrer par Rattachement</label>
-        <select id="filterDetailRattachement" onchange="applyDetailFilters()">
-          <option value="">-- Tous les rattachements --</option>
-        </select>
+        <label>🏢 Filtrer par Rattachement</label>
+        <div class="searchable-dropdown" id="rattachementDropdown">
+          <input type="text" class="filter-search-input" placeholder="🔍 Rechercher..." data-filter="rattachement" onkeyup="filterDropdownOptions(this)">
+          <div class="dropdown-options">
+            <div class="dropdown-option" data-value="">-- Tous les rattachements --</div>
+          </div>
+        </div>
       </div>
 
+      <!-- Statut Filter -->
       <div class="filter-group">
-        <label for="filterDetailStatut">✓ Filtrer par Statut</label>
-        <select id="filterDetailStatut" onchange="applyDetailFilters()">
-          <option value="">-- Tous les statuts --</option>
-          <option value="En cours">⏳ En cours</option>
-          <option value="Terminé">✅ Terminé</option>
-        </select>
+        <label>✓ Filtrer par Statut</label>
+        <div class="searchable-dropdown" id="statutDropdown">
+          <input type="text" class="filter-search-input" placeholder="🔍 Rechercher..." data-filter="statut" onkeyup="filterDropdownOptions(this)">
+          <div class="dropdown-options">
+            <div class="dropdown-option" data-value="">-- Tous les statuts --</div>
+            <div class="dropdown-option" data-value="En cours">⏳ En cours</div>
+            <div class="dropdown-option" data-value="Terminé">✅ Terminé</div>
+          </div>
+        </div>
       </div>
 
+      <!-- Ticket Filter -->
       <div class="filter-group">
-        <label for="filterDetailTicket">🎟️ Filtrer par N° Ticket</label>
-        <select id="filterDetailTicket" onchange="applyDetailFilters()">
-          <option value="">-- Tous les tickets --</option>
-        </select>
+        <label>🎟️ Filtrer par N° Ticket</label>
+        <div class="searchable-dropdown" id="ticketDropdown">
+          <input type="text" class="filter-search-input" placeholder="🔍 Rechercher..." data-filter="ticket" onkeyup="filterDropdownOptions(this)">
+          <div class="dropdown-options">
+            <div class="dropdown-option" data-value="">-- Tous les tickets --</div>
+          </div>
+        </div>
       </div>
 
       <button class="btn btn-secondary" onclick="resetDetailFilters()">🔄 Réinitialiser</button>
