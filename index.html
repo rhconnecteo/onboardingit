@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Offboarding - IT</title>
+  <title>Onboarding - IT</title>
   <link rel="icon" type="image/png" href="mathematiques.png">
   <link rel="stylesheet" href="style.css">
   <!-- Chart.js -->
@@ -18,7 +18,7 @@
       <div class="login-box">
         <div class="login-header">
           <h1>🔐 Authentication</h1>
-          <p>IT Support - Offboarding Tracking</p>
+          <p>IT Support - Tool Tracking</p>
         </div>
         
         <form id="loginForm" class="login-form">
@@ -57,7 +57,7 @@
   </div>
 
   <header class="header">
-    <h1>Support IT - Suivi Offboarding</h1>
+    <h1>Support IT - Suivi Outils</h1>
 
     <div class="header-buttons">
       <button id="btnForm" class="btn active" onclick="showForm()">📝 Formulaire</button>
@@ -72,7 +72,7 @@
   ======================= -->
   <section id="formCard" class="card">
 
-    <h2>📝 Formulaire de suivi Offboarding</h2>
+    <h2>📝 Formulaire de suivi</h2>
 
     <div class="form-group">
       <label>👤 Matricule</label>
@@ -109,8 +109,8 @@
       </div>
 
       <div>
-        <label>📅 Date de départ</label>
-        <div id="datedepart" class="readonly"></div>
+        <label>📅 Date d'intégration</label>
+        <div id="dateIntegration" class="readonly"></div>
       </div>
 
       <div>
@@ -136,11 +136,6 @@
       <div>
         <label>🏁 Date Fin</label>
         <input type="text" id="dateFin" readonly />
-      </div>
-
-      <div>
-        <label>🎫 Ticket Tyfanie</label>
-        <div id="ticketTyfanieDisplay" class="readonly"></div>
       </div>
 
       <div>
@@ -237,7 +232,6 @@
             <th>⏰ Deadline</th>
             <th>🎯 Etat</th>
             <th>🏁 Date Fin</th>
-            <th>🎫 Ticket Tyfanie</th>
             <th>📊 Statut Suivi</th>
             <th>⚙️ Actions</th>
           </tr>
