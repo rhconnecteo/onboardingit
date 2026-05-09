@@ -9,7 +9,49 @@ let isAuthenticated = false;
 // ===============================
 // CONFIG API
 // ===============================
-const API_URL = "https://script.google.com/macros/s/AKfycby9F0yKZquOMRFi0I4pucZtSq7eMjbyqNUUd-nVh6p3PeLhd7YutqiAyborkcMz3MAU2w/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxaVEIGu9QKGnWOKibaXGzllPoplRMildpb93VPreXx6genry7t3WvvAVXJuDEi9Aze/exec";
+
+function apiRequest(action, params = {}) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement("script");
+    const url = new URL(API_URL);
+
+    url.searchParams.set("action", action);
+    url.searchParams.set("callback", callbackName);
+
+    Object.entries(params).forEach(([key, value]) => {
+      url.searchParams.set(key, value);
+    });
+
+    const cleanup = () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+      delete window[callbackName];
+    };
+
+    const timeoutId = setTimeout(() => {
+      cleanup();
+      reject(new Error("Délai dépassé lors de l'appel à l'API"));
+    }, 15000);
+
+    window[callbackName] = (data) => {
+      clearTimeout(timeoutId);
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = () => {
+      clearTimeout(timeoutId);
+      cleanup();
+      reject(new Error("Impossible de contacter l'API"));
+    };
+
+    script.src = url.toString();
+    document.head.appendChild(script);
+  });
+}
 
 // ===============================
 // ELEMENTS HTML
@@ -29,13 +71,14 @@ function initializeElements() {
     statut: document.getElementById("statut"),
     fonction: document.getElementById("fonction"),
     rattachement: document.getElementById("rattachement"),
-    dateIntegration: document.getElementById("dateIntegration"),
+    datedepart: document.getElementById("datedepart"),
     login: document.getElementById("login"),
     dateCreation: document.getElementById("dateCreation"),
     deadline: document.getElementById("deadline"),
     outils: document.getElementById("outils"),
     etat: document.getElementById("etat"),
     dateFin: document.getElementById("dateFin"),
+    ticketTyfanieDisplay: document.getElementById("ticketTyfanieDisplay"),
     statutSuivi: document.getElementById("statutSuivi"),
     msg: document.getElementById("msg"),
     dashboardCard: document.getElementById("dashboardCard"),
@@ -286,10 +329,7 @@ function parseFR(dateFR) {
 // ===============================
 async function loadUsers() {
   try {
-    const res = await fetch(`${API_URL}?action=getUsers`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const data = await res.json();
+    const data = await apiRequest("getUsers");
     users = data || [];
 
     el.matricule.innerHTML = `<option value="">-- Choisir un matricule --</option>`;
@@ -437,7 +477,7 @@ window.loadUser = function () {
   el.statut.textContent = currentUser.statut || "";
   el.fonction.textContent = currentUser.fonction || "";
   el.rattachement.textContent = currentUser.rattachement || "";
-  el.dateIntegration.textContent = currentUser.dateIntegration || "";
+  el.datedepart.textContent = currentUser.datedepart || "";
 
   el.login.textContent = currentUser.login || "";
   el.dateCreation.textContent = currentUser.dateCreation || "";
@@ -727,6 +767,7 @@ function updateEtat() {
 
   el.etat.textContent = currentUser.etat;
   el.dateFin.value = currentUser.dateFin || "";
+  el.ticketTyfanieDisplay.textContent = currentUser.ticketTyfanie || "";
   el.statutSuivi.textContent = currentUser.statutSuivi;
 
   el.etat.classList.remove("etat-ok", "etat-warn");
@@ -797,12 +838,9 @@ window.save = async function () {
   updateEtat();
 
   try {
-    const url = `${API_URL}?action=saveUser&data=${encodeURIComponent(JSON.stringify(currentUser))}`;
-
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const result = await res.json();
+    const result = await apiRequest("saveUser", {
+      data: JSON.stringify(currentUser)
+    });
 
     if (result.success) {
       el.msg.textContent = "✅ Enregistré avec succès";
@@ -854,12 +892,13 @@ function resetForm() {
   el.statut.textContent = "";
   el.fonction.textContent = "";
   el.rattachement.textContent = "";
-  el.dateIntegration.textContent = "";
+  el.datedepart.textContent = "";
   el.login.textContent = "";
   el.dateCreation.textContent = "";
   el.deadline.textContent = "";
   el.etat.textContent = "";
   el.dateFin.value = "";
+  el.ticketTyfanieDisplay.textContent = "";
   el.statutSuivi.textContent = "";
   el.outils.innerHTML = "";
   currentUser = null;
@@ -871,10 +910,7 @@ function resetForm() {
 // ===============================
 async function loadDashboard() {
   try {
-    const res = await fetch(`${API_URL}?action=getDashboard`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const data = await res.json();
+    const data = await apiRequest("getDashboard");
     dashboardData = data || [];
 
     renderDashboard(dashboardData);
@@ -915,6 +951,7 @@ function renderDashboard(data) {
         <td>${row.deadline || ""}</td>
         <td>${row.etat || ""}</td>
         <td>${row.dateFin || ""}</td>
+        <td>${row.ticketTyfanie || ""}</td>
         <td><span class="badge ${suiviClass}">${row.statutSuivi || ""}</span></td>
         <td>${modifyBtn}</td>
       </tr>
@@ -1017,10 +1054,7 @@ function updateCharts() {
 // ===============================
 async function loadDetail() {
   try {
-    const res = await fetch(`${API_URL}?action=getDashboard`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const data = await res.json();
+    const data = await apiRequest("getDashboard");
     dashboardData = data || [];
 
     // Populer les filtres
@@ -1461,9 +1495,7 @@ function showApiError(message) {
 
 async function testApi() {
   try {
-    const res = await fetch(`${API_URL}?action=getDashboard`, { method: "GET" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    await res.json();
+    await apiRequest("getDashboard");
     return true;
   } catch (err) {
     showApiError("Test API a échoué: " + err.message);

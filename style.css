@@ -219,6 +219,7 @@ body {
   padding: 20px 20px 40px 20px;
   padding-top: calc(var(--header-height) + 20px);
   color: var(--text);
+  overflow-x: hidden;
 }
 
 .container {
@@ -266,6 +267,7 @@ h3 {
   box-shadow: var(--shadow-md);
   border: 1px solid var(--border);
   transition: all 0.3s ease;
+  overflow: visible;
 }
 
 .card:hover {
@@ -327,6 +329,11 @@ select, input, textarea {
   box-sizing: border-box;
   font-family: inherit;
   transition: all 0.2s ease;
+}
+
+select {
+  position: relative;
+  z-index: 10;
 }
 
 select:hover, input:hover, textarea:hover {
@@ -933,7 +940,6 @@ input[readonly], input[readonly]:focus {
 .outil-status-badge.rejete {
   background: rgba(239, 68, 68, 0.15);
   color: var(--danger);
-}
   background: #fee2e2;
   color: #7f1d1d;
 }
