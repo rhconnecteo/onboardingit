@@ -9,8 +9,40 @@ let isAuthenticated = false;
 // ===============================
 // CONFIG API
 // ===============================
-const API_URL = "https://script.google.com/macros/s/AKfycby9F0yKZquOMRFi0I4pucZtSq7eMjbyqNUUd-nVh6p3PeLhd7YutqiAyborkcMz3MAU2w/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwS5p3ZwHJ3eb_h_xPnFOtYILovUY3vvEqrqeIZ3-pk3jWYnL_TSbMiOjnAR0D3gyLG3g/exec";
 
+async function callApi(action, params = {}) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement("script");
+    const queryParams = new URLSearchParams();
+
+    queryParams.set("action", action);
+    queryParams.set("callback", callbackName);
+
+    Object.entries(params).forEach(([key, value]) => {
+      queryParams.set(key, typeof value === "string" ? value : JSON.stringify(value));
+    });
+
+    const cleanup = () => {
+      if (script.parentNode) script.parentNode.removeChild(script);
+      delete window[callbackName];
+    };
+
+    window[callbackName] = (data) => {
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error("Impossible de contacter l'API"));
+    };
+
+    script.src = `${API_URL}?${queryParams.toString()}`;
+    document.head.appendChild(script);
+  });
+}
 // ===============================
 // ELEMENTS HTML
 // ===============================
@@ -286,10 +318,7 @@ function parseFR(dateFR) {
 // ===============================
 async function loadUsers() {
   try {
-    const res = await fetch(`${API_URL}?action=getUsers`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const data = await res.json();
+    const data = await callApi("getUsers");
     users = data || [];
 
     el.matricule.innerHTML = `<option value="">-- Choisir un matricule --</option>`;
@@ -797,12 +826,7 @@ window.save = async function () {
   updateEtat();
 
   try {
-    const url = `${API_URL}?action=saveUser&data=${encodeURIComponent(JSON.stringify(currentUser))}`;
-
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const result = await res.json();
+    const result = await callApi("saveUser", { data: currentUser });
 
     if (result.success) {
       el.msg.textContent = "✅ Enregistré avec succès";
@@ -871,10 +895,7 @@ function resetForm() {
 // ===============================
 async function loadDashboard() {
   try {
-    const res = await fetch(`${API_URL}?action=getDashboard`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const data = await res.json();
+    const data = await callApi("getDashboard");
     dashboardData = data || [];
 
     renderDashboard(dashboardData);
@@ -1017,10 +1038,7 @@ function updateCharts() {
 // ===============================
 async function loadDetail() {
   try {
-    const res = await fetch(`${API_URL}?action=getDashboard`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const data = await res.json();
+    const data = await callApi("getDashboard");
     dashboardData = data || [];
 
     // Populer les filtres
@@ -1461,9 +1479,7 @@ function showApiError(message) {
 
 async function testApi() {
   try {
-    const res = await fetch(`${API_URL}?action=getDashboard`, { method: "GET" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    await res.json();
+    await callApi("getDashboard");
     return true;
   } catch (err) {
     showApiError("Test API a échoué: " + err.message);
