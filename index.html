@@ -178,13 +178,32 @@
         <h3>🎯 État Global (Terminé / En cours)</h3>
         <canvas id="chartEtat"></canvas>
       </div>
+      <div class="chart-container">
+        <h3>🎯 Taux de conformité</h3>
+        <div class="progress-card">
+          <div id="dashboardProgressRing" class="progress-ring" style="--progress: 0;">
+            <div class="progress-ring-inner">
+              <div id="dashboardProgressValue" class="progress-value">0%</div>
+              <div id="dashboardProgressLabel" class="progress-label">Progression en cours</div>
+            </div>
+          </div>
+          <p id="dashboardProgressSubtitle" class="progress-subtitle">0 respecté sur 0 suivis filtrés</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-summary">
+      <div class="summary-card summary-primary">
+        <label>👥 Personnes concernées</label>
+        <div class="stat-value" id="statTotal">0</div>
+      </div>
+      <div class="summary-card summary-secondary">
+        <label>🛠️ Outils créés</label>
+        <div class="stat-value" id="statOutils">0</div>
+      </div>
     </div>
 
     <div class="stats-row">
-      <div class="stat-card">
-        <label>📊 Total</label>
-        <div class="stat-value" id="statTotal">0</div>
-      </div>
       <div class="stat-card">
         <label>⏳ En cours</label>
         <div class="stat-value" id="statEnCours">0</div>
@@ -201,6 +220,17 @@
 
     <div class="filters">
       <input type="text" id="searchBox" placeholder="🔍 Rechercher Matricule / Nom / Login" class="search-input">
+
+      <div class="date-range-filter">
+        <div class="date-filter-box">
+          <label for="dateFilterStart">📅 Date début outil</label>
+          <input type="date" id="dateFilterStart" class="date-input">
+        </div>
+        <div class="date-filter-box">
+          <label for="dateFilterEnd">📅 Date fin outil</label>
+          <input type="date" id="dateFilterEnd" class="date-input">
+        </div>
+      </div>
 
       <select id="etatFilter">
         <option value="">🎯 Tous les Etats</option>

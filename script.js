@@ -73,8 +73,14 @@ function initializeElements() {
     dashboardCard: document.getElementById("dashboardCard"),
     formCard: document.getElementById("formCard"),
     detailCard: document.getElementById("detailCard"),
+    dashboardProgressRing: document.getElementById("dashboardProgressRing"),
+    dashboardProgressValue: document.getElementById("dashboardProgressValue"),
+    dashboardProgressLabel: document.getElementById("dashboardProgressLabel"),
+    dashboardProgressSubtitle: document.getElementById("dashboardProgressSubtitle"),
     detailTableBody: document.getElementById("detailTableBody"),
     detailEmptyMessage: document.getElementById("detailEmptyMessage"),
+    dateFilterStart: document.getElementById("dateFilterStart"),
+    dateFilterEnd: document.getElementById("dateFilterEnd"),
     matriculeDropdown: document.getElementById("matriculeDropdown"),
     fonctionDropdown: document.getElementById("fonctionDropdown"),
     rattachementDropdown: document.getElementById("rattachementDropdown"),
@@ -310,6 +316,121 @@ function parseFR(dateFR) {
   const p = dateFR.split("/");
   if (p.length !== 3) return null;
   return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
+}
+
+
+// ===============================
+// PARSE DATE FLEXIBLE
+// ===============================
+function parseDashboardDate(value) {
+  if (!value) return null;
+
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return value;
+  }
+
+  const raw = String(value).trim();
+  if (!raw) return null;
+
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return new Date(parseInt(isoMatch[1]), parseInt(isoMatch[2]) - 1, parseInt(isoMatch[3]));
+  }
+
+  const frMatch = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (frMatch) {
+    return new Date(parseInt(frMatch[3]), parseInt(frMatch[2]) - 1, parseInt(frMatch[1]));
+  }
+
+  const date = new Date(raw);
+  return isNaN(date.getTime()) ? null : date;
+}
+
+
+// ===============================
+// START OF DAY
+// ===============================
+function startOfDay(date) {
+  if (!(date instanceof Date) || isNaN(date.getTime())) return null;
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+
+// ===============================
+// FILTER DASHBOARD DATA
+// ===============================
+function getDashboardFilteredData() {
+  const searchTerm = (document.getElementById("searchBox")?.value || "").trim().toLowerCase();
+  const etatValue = document.getElementById("etatFilter")?.value || "";
+  const suiviValue = document.getElementById("suiviFilter")?.value || "";
+  const dateStartValue = document.getElementById("dateFilterStart")?.value || "";
+  const dateEndValue = document.getElementById("dateFilterEnd")?.value || "";
+  const fromDate = dateStartValue ? startOfDay(parseDashboardDate(dateStartValue)) : null;
+  const toDate = dateEndValue ? startOfDay(parseDashboardDate(dateEndValue)) : null;
+
+  const rows = [];
+  let outilsDansPlage = 0;
+  let personnesAvecOutilDansPlage = 0;
+
+  (dashboardData || []).forEach((row) => {
+    const matricule = String(row.matricule || "").toLowerCase();
+    const statut = String(row.statut || "").toLowerCase();
+    const nom = String(row.nom || "").toLowerCase();
+    const login = String(row.login || "").toLowerCase();
+
+    const matchSearch =
+      !searchTerm ||
+      matricule.includes(searchTerm) ||
+      statut.includes(searchTerm) ||
+      nom.includes(searchTerm) ||
+      login.includes(searchTerm);
+
+    const matchEtat = !etatValue || row.etat === etatValue;
+    const matchSuivi = !suiviValue || row.statutSuivi === suiviValue;
+
+    let toolCountForRow = 0;
+    const outils = Array.isArray(row.outils) ? row.outils : [];
+
+    if (fromDate || toDate) {
+      toolCountForRow = outils.filter((outil) => {
+        const d = startOfDay(parseDashboardDate(outil?.dateDebut));
+        if (!d) return false;
+        if (fromDate && d < fromDate) return false;
+        if (toDate && d > toDate) return false;
+        return true;
+      }).length;
+    } else {
+      toolCountForRow = outils.length;
+    }
+
+    const matchDateRange = !(fromDate || toDate) || toolCountForRow > 0;
+
+    if (matchSearch && matchEtat && matchSuivi && matchDateRange) {
+      rows.push(row);
+      outilsDansPlage += toolCountForRow;
+      if (toolCountForRow > 0) {
+        personnesAvecOutilDansPlage += 1;
+      }
+    }
+  });
+
+  return {
+    rows,
+    outilsDansPlage,
+    personnesAvecOutilDansPlage,
+    hasDateRange: !!(fromDate || toDate)
+  };
+}
+
+
+// ===============================
+// APPLY DASHBOARD FILTERS
+// ===============================
+function applyDashboardFilters() {
+  const filtered = getDashboardFilteredData();
+  renderDashboard(filtered.rows);
+  updateStats(filtered.rows, filtered.outilsDansPlage, filtered.personnesAvecOutilDansPlage, filtered.hasDateRange);
+  updateCharts(filtered.rows);
 }
 
 
@@ -898,9 +1019,7 @@ async function loadDashboard() {
     const data = await callApi("getDashboard");
     dashboardData = data || [];
 
-    renderDashboard(dashboardData);
-    updateStats();
-    updateCharts();
+    applyDashboardFilters();
 
   } catch (err) {
     showApiError(`Impossible de charger le dashboard: ${err.message}`);
@@ -945,31 +1064,57 @@ function renderDashboard(data) {
   setupTableFilters();
 }
 
-function updateStats() {
-  const total = dashboardData.length;
-  const enCours = dashboardData.filter(u => u.statutSuivi === "En cours").length;
-  const respecte = dashboardData.filter(u => u.statutSuivi === "Respecté").length;
-  const nonRespecte = dashboardData.filter(u => u.statutSuivi === "Non respecté").length;
+function updateStats(data = dashboardData, outilsDansPlage = null, personnesAvecOutilDansPlage = null, hasDateRange = false) {
+  const totalPersonnes = hasDateRange && typeof personnesAvecOutilDansPlage === "number"
+    ? personnesAvecOutilDansPlage
+    : data.length;
 
-  document.getElementById("statTotal").textContent = total;
+  const totalOutils = typeof outilsDansPlage === "number"
+    ? outilsDansPlage
+    : data.reduce((sum, row) => sum + (Array.isArray(row.outils) ? row.outils.length : 0), 0);
+
+  const enCours = data.filter(u => u.statutSuivi === "En cours").length;
+  const respecte = data.filter(u => u.statutSuivi === "Respecté").length;
+  const nonRespecte = data.filter(u => u.statutSuivi === "Non respecté").length;
+  const totalStatuts = respecte + nonRespecte + enCours;
+  const progression = totalStatuts > 0 ? Math.round((respecte / totalStatuts) * 100) : 0;
+
+  document.getElementById("statTotal").textContent = totalPersonnes;
+  document.getElementById("statOutils").textContent = totalOutils;
   document.getElementById("statEnCours").textContent = enCours;
   document.getElementById("statRespecte").textContent = respecte;
   document.getElementById("statNonRespecte").textContent = nonRespecte;
+
+  if (el.dashboardProgressRing) {
+    el.dashboardProgressRing.style.setProperty("--progress", progression);
+  }
+
+  if (el.dashboardProgressValue) {
+    el.dashboardProgressValue.textContent = `${progression}%`;
+  }
+
+  if (el.dashboardProgressLabel) {
+    el.dashboardProgressLabel.textContent = progression >= 100 ? "Objectif atteint" : "Progression en cours";
+  }
+
+  if (el.dashboardProgressSubtitle) {
+    el.dashboardProgressSubtitle.textContent = `${respecte} respecté${respecte > 1 ? "s" : ""} sur ${totalStatuts} `;
+  }
 }
 
-function updateCharts() {
-  if (!dashboardData || dashboardData.length === 0) {
+function updateCharts(data = dashboardData) {
+  if (!data || data.length === 0) {
     if (chartSuivi) { chartSuivi.destroy(); chartSuivi = null; }
     if (chartEtat) { chartEtat.destroy(); chartEtat = null; }
     return;
   }
 
-  const enCours    = dashboardData.filter(u => u.statutSuivi === "En cours").length;
-  const respecte   = dashboardData.filter(u => u.statutSuivi === "Respecté").length;
-  const nonRespecte = dashboardData.filter(u => u.statutSuivi === "Non respecté").length;
+  const enCours    = data.filter(u => u.statutSuivi === "En cours").length;
+  const respecte   = data.filter(u => u.statutSuivi === "Respecté").length;
+  const nonRespecte = data.filter(u => u.statutSuivi === "Non respecté").length;
 
-  const etatTermine = dashboardData.filter(u => u.etat === "Terminé").length;
-  const etatEnCours = dashboardData.filter(u => u.etat === "En cours").length;
+  const etatTermine = data.filter(u => u.etat === "Terminé").length;
+  const etatEnCours = data.filter(u => u.etat === "En cours").length;
 
   // Chart Suivi
   try {
@@ -1371,44 +1516,22 @@ function setupTableFilters() {
   const searchBox  = document.getElementById("searchBox");
   const etatFilter  = document.getElementById("etatFilter");
   const suiviFilter = document.getElementById("suiviFilter");
+  const dateFilterStart = document.getElementById("dateFilterStart");
+  const dateFilterEnd = document.getElementById("dateFilterEnd");
 
-  if (!searchBox || !etatFilter || !suiviFilter) return;
+  if (!searchBox || !etatFilter || !suiviFilter || !dateFilterStart || !dateFilterEnd) return;
 
   const filterTable = () => {
-    const searchTerm = searchBox.value.toLowerCase();
-    const etatValue  = etatFilter.value;
-    const suiviValue = suiviFilter.value;
-
-    const tbody = document.querySelector("#dashboardTable tbody");
-    if (!tbody) return;
-
-    const rows = tbody.querySelectorAll("tr");
-
-    rows.forEach(row => {
-      const matricule = row.cells[0]?.textContent.toLowerCase() || "";
-      const statut    = row.cells[1]?.textContent.toLowerCase() || "";
-      const nom       = row.cells[2]?.textContent.toLowerCase() || "";
-      const login     = row.cells[5]?.textContent.toLowerCase() || "";
-
-      const etat  = row.cells[8]?.textContent || "";
-      const suivi = row.cells[10]?.textContent || "";
-
-      const matchSearch =
-        matricule.includes(searchTerm) ||
-        statut.includes(searchTerm)    ||
-        nom.includes(searchTerm)       ||
-        login.includes(searchTerm);
-
-      const matchEtat  = !etatValue || etat === etatValue;
-      const matchSuivi = !suiviValue || suivi.includes(suiviValue);
-
-      row.style.display = matchSearch && matchEtat && matchSuivi ? "" : "none";
-    });
+    applyDashboardFilters();
   };
 
-  searchBox.oninput   = filterTable;
-  etatFilter.onchange  = filterTable;
+  searchBox.oninput = filterTable;
+  etatFilter.onchange = filterTable;
   suiviFilter.onchange = filterTable;
+  dateFilterStart.onchange = filterTable;
+  dateFilterStart.oninput = filterTable;
+  dateFilterEnd.onchange = filterTable;
+  dateFilterEnd.oninput = filterTable;
 }
 
 // ===============================
