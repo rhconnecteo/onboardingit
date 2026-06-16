@@ -9,7 +9,7 @@ let isAuthenticated = false;
 // ===============================
 // CONFIG API
 // ===============================
-const API_URL = "https://script.google.com/macros/s/AKfycbwS5p3ZwHJ3eb_h_xPnFOtYILovUY3vvEqrqeIZ3-pk3jWYnL_TSbMiOjnAR0D3gyLG3g/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby5AUlNrnwi945M1kArX-bDuCEL-LR16UGbo4is7K7KUnHnn13F9MK5SSC8MOq8kZs1OA/exec";
 
 async function callApi(action, params = {}) {
   return new Promise((resolve, reject) => {
@@ -67,6 +67,7 @@ function initializeElements() {
     deadline: document.getElementById("deadline"),
     outils: document.getElementById("outils"),
     etat: document.getElementById("etat"),
+    nePasCreerOutils: document.getElementById("nePasCreerOutils"),
     dateFin: document.getElementById("dateFin"),
     statutSuivi: document.getElementById("statutSuivi"),
     msg: document.getElementById("msg"),
@@ -582,6 +583,10 @@ window.loadUser = function () {
   el.dateFin.removeEventListener('change', handleDateFinChange);
   el.dateFin.addEventListener('change', handleDateFinChange);
 
+  // 🔥 Gérer le checkbox "Ne pas créer d'outils"
+  el.nePasCreerOutils.removeEventListener('change', handleNePasCreerOutils);
+  el.nePasCreerOutils.addEventListener('change', handleNePasCreerOutils);
+
   el.affichageMatricule.textContent = currentUser.matricule || "";
   el.nom.textContent = currentUser.nom || "";
   el.statut.textContent = currentUser.statut || "";
@@ -592,6 +597,14 @@ window.loadUser = function () {
   el.login.textContent = currentUser.login || "";
   el.dateCreation.textContent = currentUser.dateCreation || "";
   el.deadline.textContent = currentUser.deadline || "";
+
+  // Charger l'état du checkbox
+  el.nePasCreerOutils.checked = currentUser.nePasCreerOutils || false;
+
+  // Si le checkbox est coché, mettre la date fin à aujourd'hui
+  if (el.nePasCreerOutils.checked) {
+    currentUser.dateFin = todayFR();
+  }
 
   renderOutils();
   updateEtat();
@@ -829,6 +842,29 @@ function setupOutilsEvents() {
 
 
 // ===============================
+// HANDLE CHECKBOX "NE PAS CRÉER D'OUTILS"
+// ===============================
+function handleNePasCreerOutils(e) {
+  if (!currentUser) return;
+
+  const isChecked = e.target.checked;
+  currentUser.nePasCreerOutils = isChecked;
+
+  if (isChecked) {
+    // 🔥 Si coché : mettre la date fin à aujourd'hui
+    currentUser.dateFin = todayFR();
+    el.dateFin.value = todayFR();
+  } else {
+    // 🔥 Si décoché : vider la date fin
+    currentUser.dateFin = "";
+    el.dateFin.value = "";
+  }
+
+  updateEtat();
+}
+
+
+// ===============================
 // CALCUL STATUT SUIVI
 // ===============================
 function calcStatutSuivi(deadline, dateFin, etat) {
@@ -870,7 +906,13 @@ function updateEtat() {
     }
   } else {
     currentUser.etat = "En cours";
-    currentUser.dateFin = "";
+    
+    // 🔥 Si "Ne pas créer d'outils" est coché, garder la date d'aujourd'hui
+    if (!currentUser.nePasCreerOutils) {
+      currentUser.dateFin = "";
+    } else {
+      currentUser.dateFin = todayFR();
+    }
   }
 
   currentUser.statutSuivi = calcStatutSuivi(currentUser.deadline, currentUser.dateFin, currentUser.etat);

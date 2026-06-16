@@ -227,6 +227,7 @@ function getUsersAPI() {
   const dateFinCol = getMainColumnIndex("date fin", headerMap, sh, toolsStart, 10);
   const statutSuiviCol = getMainColumnIndex("statutsuivi", headerMap, sh, toolsStart, 11);
   const etatCol = getMainColumnIndex("etat", headerMap, sh, toolsStart, 12);
+  const nePasCreerOutilsCol = getMainColumnIndex("ne pas creer outils", headerMap, sh, toolsStart, 13);
 
   for (let i = 1; i < data.length; i++) {
     const matricule = (data[i][matriculeCol] || "").trim();
@@ -275,6 +276,8 @@ function getUsersAPI() {
       statutSuivi: data[i][statutSuiviCol] || "",
       etat: etat,
 
+      nePasCreerOutils: (data[i][nePasCreerOutilsCol] || "").trim() === "OUI",
+
       outils: outils
     });
   }
@@ -307,12 +310,20 @@ function saveUserAPI(user) {
   const toolsStart = findToolsStartIndex(headerMap, sh);
 
   const dateFinCol = getMainColumnIndex("date fin", headerMap, sh, toolsStart, 10);
+  const nePasCreerOutilsCol = getMainColumnIndex("ne pas creer outils", headerMap, sh, toolsStart, 13);
 
   // =========================================
   // 1) Sauvegarder Date fin
   // =========================================
   if (typeof dateFinCol === "number") {
     sh.getRange(row, dateFinCol + 1).setValue(user.dateFin || "");
+  }
+
+  // =========================================
+  // 1b) Sauvegarder Ne pas créer d'outils
+  // =========================================
+  if (typeof nePasCreerOutilsCol === "number") {
+    sh.getRange(row, nePasCreerOutilsCol + 1).setValue(user.nePasCreerOutils ? "OUI" : "");
   }
 
 
@@ -380,6 +391,7 @@ function getDashboardAPI() {
   const dateFinCol = getMainColumnIndex("date fin", headerMap, sh, toolsStart, 10);
   const statutSuiviCol = getMainColumnIndex("statutsuivi", headerMap, sh, toolsStart, 11);
   const etatCol = getMainColumnIndex("etat", headerMap, sh, toolsStart, 12);
+  const nePasCreerOutilsCol = getMainColumnIndex("ne pas creer outils", headerMap, sh, toolsStart, 13);
 
   for (let i = 1; i < data.length; i++) {
     const matricule = (data[i][matriculeCol] || "").trim();
@@ -421,6 +433,8 @@ function getDashboardAPI() {
       dateFin: data[i][dateFinCol] || "",
       statutSuivi: data[i][statutSuiviCol] || "",
       etat: data[i][etatCol] || "",
+
+      nePasCreerOutils: (data[i][nePasCreerOutilsCol] || "").trim() === "OUI",
 
       outils: outils
     });
