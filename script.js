@@ -1,8 +1,8 @@
 // ===============================
 // AUTHENTIFICATION_____
 // ===============================
-const AUTH_USERNAME = "admin";
-const AUTH_PASSWORD = "support_it";
+const AUTH_USERNAME = "onboarding";
+const AUTH_PASSWORD = "gNXbAA0hwYORYyUJ";
 
 let isAuthenticated = false;
 
